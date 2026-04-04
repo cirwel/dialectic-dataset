@@ -1,0 +1,25 @@
+# Session files
+.claude/
+
+# Python
+__pycache__/
+*.pyc
+*.egg-info/
+dist/
+build/
+.venv/
+
+# Models (binary, hosted on HuggingFace)
+models/dialectic-lora*/
+models/dialectic-qwen*/
+
+# Archive (GIGO artifacts, local only)
+archive/
+
+# Generated artifacts
+outputs/
+
+# Large data (traces are reproducible from scripts)
+*.jsonl
+!data/goldset/*.jsonl
+!data/training/*.jsonl

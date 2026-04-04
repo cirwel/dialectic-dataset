@@ -1,0 +1,510 @@
+{
+  "version": "1.0",
+  "description": "Initial gold set v1 — 24 samples (8 good, 8 mid, 8 bad/adversarial). Minimum viable for first calibration pass.",
+  "samples": [
+    {
+      "sample_id": "good_01",
+      "category": "design_tradeoff",
+      "question": "Should startups optimize for speed of iteration or code quality?",
+      "thesis": "The case for speed is straightforward: startups that ship faster learn faster. Every week of polish is a week without user feedback. Companies like early Facebook explicitly chose to move fast because market learning compounds. The startup that validates assumptions in two weeks beats the one that builds perfect code for two months, because the perfect code might solve the wrong problem entirely.",
+      "antithesis": "But speed has a blind spot. Technical debt compounds in the opposite direction. Airbnb's early engineers have spoken about how shortcuts in their booking system created outages that nearly killed the company. When your codebase becomes hostile to change, iteration speed drops to zero regardless of your stated philosophy. The speed advantage is self-defeating if it destroys your ability to iterate later.",
+      "synthesis": "The two optimize on different time horizons. Speed dominates when searching for product-market fit because the probability of building the wrong thing is high and code longevity doesn't matter if the product dies. Quality dominates once fit is found and you need to scale, because each shortcut now has a long expected lifetime. The practical answer: invest in quality at the boundaries — APIs, data models, deployment pipelines — that are expensive to change, and accept mess in the interiors — UI, business logic — that you can refactor once direction is clear.",
+      "label": {
+        "tension_quality": 5,
+        "resolution_quality": 5,
+        "coherence": 5,
+        "training_usefulness": "keep",
+        "ritualization_risk": "low",
+        "would_train_on_this": true,
+        "overall_verdict": "keep",
+        "justification": "Genuine tension with time-horizon resolution that preserves both concerns."
+      },
+      "is_adversarial": false,
+      "adversarial_type": "",
+      "notes": ""
+    },
+    {
+      "sample_id": "good_02",
+      "category": "ethical_tradeoff",
+      "question": "Should a company lay off 10% of staff now to avoid probable bankruptcy?",
+      "thesis": "Preserving jobs now is the ethical default. Layoffs cause real harm: financial insecurity, health consequences, and broken trust. The prediction of bankruptcy is probabilistic, not certain. Companies that cut staff often find they've damaged morale and lost institutional knowledge that accelerates the very decline they feared. The human cost of wrongful layoffs cannot be undone if the prediction turns out wrong.",
+      "antithesis": "Refusing to act on credible financial signals puts everyone at risk. If the company fails, 100% of employees lose their jobs instead of 10%. Fiduciary responsibility extends to the remaining 90% and to stakeholders who depend on the company's survival. A painful decision now with good severance packages and transition support is more ethical than allowing a slow death that eventually destroys all positions with no warning or support.",
+      "synthesis": "The ethical weight depends on the quality of the bankruptcy signal. If the evidence is strong — declining revenue, shrinking runway, failed fundraising — then the duty shifts from preserving individual jobs to preserving the institution's ability to employ anyone. But the manner matters as much as the decision: generous severance, honest communication, rehiring priority if conditions improve, and leadership taking proportional cuts first. The worst outcome is neither laying off nor not — it's doing it poorly, without transparency or support.",
+      "label": {
+        "tension_quality": 5,
+        "resolution_quality": 4,
+        "coherence": 5,
+        "training_usefulness": "keep",
+        "ritualization_risk": "low",
+        "would_train_on_this": true,
+        "overall_verdict": "keep",
+        "justification": "Real ethical tension resolved through conditional reasoning about evidence quality and manner."
+      },
+      "is_adversarial": false,
+      "adversarial_type": "",
+      "notes": ""
+    },
+    {
+      "sample_id": "good_03",
+      "category": "conflicting_evidence",
+      "question": "Two studies on remote work reach opposite conclusions. How should a company setting policy interpret this?",
+      "thesis": "The productivity studies favoring remote work consistently measure output per worker-hour and find gains of 5-15%. Reduced commute time, fewer interruptions, and flexible scheduling allow deeper focus. Stanford's two-year study at a Chinese travel agency found a 13% performance increase among remote workers, with lower attrition and higher satisfaction.",
+      "antithesis": "Studies finding productivity losses measure different things: innovation, mentorship, spontaneous collaboration, and organizational learning. Microsoft's analysis of their own workforce showed that remote work reduced cross-team communication by 25% and shifted networks toward siloed, static patterns. These effects don't appear in output-per-hour metrics but compound over months as the organization loses its ability to adapt and generate new ideas.",
+      "synthesis": "The studies aren't contradicting each other — they're measuring different productivity dimensions. Individual task execution improves remotely while collective intelligence and network effects degrade. The right policy depends on what the company's bottleneck actually is. A mature company with established products and processes benefits from remote work because individual execution matters most. A company in early stages, undergoing transformation, or dependent on cross-functional innovation needs more in-person time because organizational learning is the binding constraint. Most companies need different policies for different teams based on their current bottleneck.",
+      "label": {
+        "tension_quality": 5,
+        "resolution_quality": 5,
+        "coherence": 5,
+        "training_usefulness": "keep",
+        "ritualization_risk": "low",
+        "would_train_on_this": true,
+        "overall_verdict": "keep",
+        "justification": "Resolves apparent contradiction by identifying that studies measure different constructs."
+      },
+      "is_adversarial": false,
+      "adversarial_type": "",
+      "notes": ""
+    },
+    {
+      "sample_id": "good_04",
+      "category": "safety_vs_capability",
+      "question": "Should security researchers publicly disclose zero-day vulnerabilities?",
+      "thesis": "Public disclosure creates market pressure for vendors to patch. Without it, vendors routinely sit on vulnerability reports for months or years because fixing is expensive and the risk is hidden. Full disclosure shifted the industry norm from years-long patch cycles to days or weeks. The threat of public exposure is sometimes the only lever that forces action, protecting millions of users who would otherwise remain vulnerable indefinitely.",
+      "antithesis": "Immediate public disclosure hands a weapon to every attacker before most users can patch. The window between disclosure and widespread patching can be days to weeks, during which millions of systems are exposed to attacks they weren't before. Coordinated disclosure — reporting privately with a deadline — achieves the same pressure without the interim exposure. Responsible researchers should exhaust private channels before going public.",
+      "synthesis": "The coordinated disclosure model with firm deadlines — typically 90 days — captures both pressures. It gives vendors time to develop and distribute patches while maintaining the credible threat that forces action. The deadline is critical: without it, coordinated disclosure collapses into silent reporting that vendors ignore. When vendors refuse to engage or miss the deadline, public disclosure becomes justified because the alternative is indefinite silent vulnerability. The key variable is whether the vulnerability is already being exploited in the wild — if it is, immediate disclosure is warranted because secrecy only benefits the attacker.",
+      "label": {
+        "tension_quality": 5,
+        "resolution_quality": 5,
+        "coherence": 5,
+        "training_usefulness": "keep",
+        "ritualization_risk": "low",
+        "would_train_on_this": true,
+        "overall_verdict": "keep",
+        "justification": "Clean conditional resolution that identifies the key variables (deadline, active exploitation)."
+      },
+      "is_adversarial": false,
+      "adversarial_type": "",
+      "notes": ""
+    },
+    {
+      "sample_id": "good_05",
+      "category": "strategy_under_constraints",
+      "question": "Hire two junior engineers or one senior engineer?",
+      "thesis": "Two juniors provide more raw capacity and can parallelize work across the backlog. They bring fresh perspectives and energy, cost less in total, and if one leaves you still have the other. For execution-heavy roadmaps with well-defined tasks, two productive hands are better than one, and mentoring juniors builds a sustainable team pipeline.",
+      "antithesis": "A senior engineer provides architectural judgment that juniors lack. In a complex legacy codebase, a senior can identify systemic improvements that save more time than two juniors can create. They can mentor the existing team, make better technical decisions, and handle ambiguity without supervision. One senior making the right architectural call prevents months of rework that two juniors might create through well-intentioned but structurally unsound decisions.",
+      "synthesis": "The decision depends on the team's current constraint. If the team already has senior judgment and the bottleneck is execution capacity, two juniors unlock more throughput. If the team lacks architectural direction and is accumulating structural debt, a senior provides leverage that no amount of junior execution can substitute. A mid-sized team with a complex legacy codebase and aggressive roadmap — which describes the scenario — likely needs the senior first, because legacy complexity is the force multiplier: a senior who simplifies the codebase makes everyone faster, while juniors in a complex codebase often slow down.",
+      "label": {
+        "tension_quality": 4,
+        "resolution_quality": 5,
+        "coherence": 5,
+        "training_usefulness": "keep",
+        "ritualization_risk": "low",
+        "would_train_on_this": true,
+        "overall_verdict": "keep",
+        "justification": "Resolves by identifying the binding constraint, then applies it to the specific scenario."
+      },
+      "is_adversarial": false,
+      "adversarial_type": "",
+      "notes": ""
+    },
+    {
+      "sample_id": "good_06",
+      "category": "policy_ambiguity",
+      "question": "Should cities implement congestion pricing?",
+      "thesis": "Congestion pricing works. London, Stockholm, and Singapore all saw 15-30% traffic reduction after implementation. It forces drivers to internalize the social cost of their congestion, shifts marginal trips to transit or off-peak hours, and generates revenue for transportation infrastructure. The economic logic is clear: scarce road space during peak hours should be priced like any scarce resource.",
+      "antithesis": "Congestion pricing is regressive by design. A $15 toll means nothing to a high earner but forces a shift worker to choose between paying a significant fraction of their hourly wage or adding an hour to their commute on transit that may not serve their route or schedule. It effectively creates a two-tier road system where wealthy drivers enjoy clear roads while everyone else absorbs the burden. Existing transit often cannot absorb the displaced demand, especially in cities with underinvested public transportation.",
+      "synthesis": "The regressivity objection is real but addressable rather than fatal. Congestion pricing revenue can fund the specific transit improvements that low-income commuters need — not just any transit, but the routes, hours, and reliability that serve shift workers and service workers. Stockholm earmarked pricing revenue for transit expansion and saw public support increase from 30% before implementation to 70% after, because the visible transit improvements changed the value proposition. The sequence matters: announce transit improvements first, fund them with pricing revenue, and provide income-based exemptions or credits for the transition period. Pricing without transit investment is regressive; pricing that funds targeted transit expansion can be progressive.",
+      "label": {
+        "tension_quality": 5,
+        "resolution_quality": 5,
+        "coherence": 5,
+        "training_usefulness": "keep",
+        "ritualization_risk": "low",
+        "would_train_on_this": true,
+        "overall_verdict": "keep",
+        "justification": "Engages the regressivity objection head-on with a conditional resolution about sequencing."
+      },
+      "is_adversarial": false,
+      "adversarial_type": "",
+      "notes": ""
+    },
+    {
+      "sample_id": "good_07",
+      "category": "short_practical_judgment",
+      "question": "Should you tell a friend their business idea is flawed if they've already quit their job?",
+      "thesis": "Honesty is what friends owe each other. Staying silent to avoid discomfort lets your friend invest more time and money into something you believe will fail. The longer the silence, the worse the eventual reckoning. Real friendship means telling hard truths when the stakes are high, not just being supportive when it's easy.",
+      "antithesis": "Timing matters more than truth. Your friend has already made an irreversible decision — they can't un-quit. Pointing out flaws now doesn't give them a meaningful choice; it just adds anxiety to an already stressful transition. Your assessment might also be wrong — you're not the market. Unsolicited criticism of someone's leap of faith can damage the relationship and their confidence without changing the outcome.",
+      "synthesis": "The question is what form honesty takes, not whether to be honest. Instead of delivering a verdict on the idea's viability, offer specific, actionable observations: 'Have you considered how you'll handle X?' or 'I've seen similar businesses struggle with Y — how are you planning for that?' This gives your friend real information they can act on without positioning yourself as judge of their decision. Frame concerns as risks to manage rather than reasons to quit, because at this point managing risks is the only useful action. Save the blunt assessment for a moment when they explicitly ask for it.",
+      "label": {
+        "tension_quality": 4,
+        "resolution_quality": 4,
+        "coherence": 4,
+        "training_usefulness": "keep",
+        "ritualization_risk": "low",
+        "would_train_on_this": true,
+        "overall_verdict": "keep",
+        "justification": "Practical resolution that reframes the binary into a communication strategy."
+      },
+      "is_adversarial": false,
+      "adversarial_type": "",
+      "notes": ""
+    },
+    {
+      "sample_id": "good_08",
+      "category": "reflective_synthesis",
+      "question": "Is consistency a virtue or a trap?",
+      "thesis": "Consistency is the foundation of trust and competence. People who follow through on commitments build credibility. Organizations that maintain consistent quality earn loyalty. Consistent practice produces mastery. Inconsistency signals unreliability, makes collaboration difficult, and undermines long-term goals. Most worthwhile outcomes require sustained effort in a single direction.",
+      "antithesis": "Consistency becomes pathological when it resists correction. Continuing a failed strategy because you started it is the sunk cost fallacy dressed as virtue. The most successful adapters — in evolution, business, and personal growth — change direction when evidence warrants it. Consistency is often just conformity to past decisions that no longer serve you, maintained because changing feels like admitting error.",
+      "synthesis": "The distinction is between consistency of values and consistency of methods. Consistently pursuing your goals while varying your approach based on new information is adaptive and strong. Consistently applying the same method despite evidence of failure is stubborn and wasteful. The virtue lies in meta-consistency: reliably updating your beliefs and strategies while maintaining stable underlying values and commitments. The question to ask is not 'Am I being consistent?' but 'Consistent with what?' Consistency with evidence and values is a virtue; consistency with expired assumptions is a trap.",
+      "label": {
+        "tension_quality": 5,
+        "resolution_quality": 5,
+        "coherence": 5,
+        "training_usefulness": "keep",
+        "ritualization_risk": "low",
+        "would_train_on_this": true,
+        "overall_verdict": "keep",
+        "justification": "Clean meta-level resolution distinguishing consistency of values vs methods."
+      },
+      "is_adversarial": false,
+      "adversarial_type": "",
+      "notes": ""
+    },
+    {
+      "sample_id": "mid_01",
+      "category": "design_tradeoff",
+      "question": "Should we use microservices for our new project?",
+      "thesis": "Microservices enable independent deployment, technology diversity, and team autonomy. Each service can be scaled independently based on its load profile. Teams can choose the best tool for each problem. Netflix, Amazon, and Uber have demonstrated that microservices enable massive scale and rapid feature development.",
+      "antithesis": "Microservices introduce distributed systems complexity: network latency, partial failures, data consistency challenges, and operational overhead. Debugging across service boundaries is significantly harder. You need infrastructure for service discovery, load balancing, monitoring, and tracing that a monolith doesn't require.",
+      "synthesis": "For most new projects, a monolith with clean module boundaries is the better starting point. You can extract services later when you discover which components actually need independent scaling. The important thing is to get the boundaries right, which you can only learn from operational experience.",
+      "label": {
+        "tension_quality": 3,
+        "resolution_quality": 3,
+        "coherence": 3,
+        "training_usefulness": "review",
+        "ritualization_risk": "medium",
+        "would_train_on_this": false,
+        "overall_verdict": "review",
+        "justification": "Decent tension but synthesis is generic advice without engaging the specific tradeoff deeply."
+      },
+      "is_adversarial": false,
+      "adversarial_type": "",
+      "notes": "Thesis and antithesis are textbook lists. Synthesis reaches the right conclusion but doesn't show why."
+    },
+    {
+      "sample_id": "mid_02",
+      "category": "ethical_tradeoff",
+      "question": "Should autonomous vehicles sacrifice passengers to minimize total casualties?",
+      "thesis": "A utilitarian calculus says yes. If the car can choose between hitting one person or five, minimizing total harm is the ethical imperative. Programming AVs to minimize casualties treats all lives equally and would save the most people in aggregate. Society already accepts utilitarian tradeoffs in infrastructure design, speed limits, and triage protocols.",
+      "antithesis": "No one will buy a car programmed to kill them. The utilitarian math ignores that the passenger chose to be in the car and has a reasonable expectation of the car acting in their interest. Trolley problems are poor models for real driving — in practice, uncertainty about outcomes is too high for precise casualty counting, and the scenarios where sacrifice calculations matter are vanishingly rare.",
+      "synthesis": "The trolley problem framing obscures the real design question. In practice, AVs should be programmed to minimize risk continuously — slower speeds, wider margins, better sensors — rather than making split-second sacrifice calculations. The philosophical debate about rare edge cases matters less than the engineering focus on preventing those situations from arising. Perhaps the regulatory focus should be on demonstrating overall safety improvement relative to human drivers rather than prescribing specific ethical rules for impossible scenarios.",
+      "label": {
+        "tension_quality": 4,
+        "resolution_quality": 3,
+        "coherence": 4,
+        "training_usefulness": "review",
+        "ritualization_risk": "low",
+        "would_train_on_this": true,
+        "overall_verdict": "review",
+        "justification": "Good reframe of the problem but synthesis hedges with 'perhaps' rather than committing."
+      },
+      "is_adversarial": false,
+      "adversarial_type": "",
+      "notes": ""
+    },
+    {
+      "sample_id": "mid_03",
+      "category": "safety_vs_capability",
+      "question": "Should children use social media?",
+      "thesis": "Social media provides connection, creative expression, and community for young people. Adolescents who lack peer connection suffer more. Online communities help marginalized youth find support systems unavailable locally. Digital literacy is a necessary life skill best developed through practice.",
+      "antithesis": "The mental health evidence is concerning. Rates of anxiety, depression, and self-harm among teens have risen sharply alongside social media adoption. Algorithmic amplification of harmful content, cyberbullying, and social comparison effects are well-documented. Children's developing brains are particularly vulnerable to addictive design patterns optimized for engagement.",
+      "synthesis": "Both the benefits and harms are real, but they affect different children differently. Age-appropriate access with parental involvement, platform-side safety features, and digital literacy education can preserve the benefits while reducing harms. Complete prohibition is neither practical nor optimal.",
+      "label": {
+        "tension_quality": 4,
+        "resolution_quality": 2,
+        "coherence": 3,
+        "training_usefulness": "reject",
+        "ritualization_risk": "medium",
+        "would_train_on_this": false,
+        "overall_verdict": "reject",
+        "justification": "Synthesis is a vague list of half-measures without explaining how they address the specific tension. Resolution quality too low for review."
+      },
+      "is_adversarial": false,
+      "adversarial_type": "",
+      "notes": "Revised from review to reject: resolution_quality=2 is below the bar for useful training supervision."
+    },
+    {
+      "sample_id": "mid_04",
+      "category": "strategy_under_constraints",
+      "question": "Improve existing product 30% or build a new one?",
+      "thesis": "Improving the existing product has lower risk and faster payoff. You have an installed base, product-market fit, and operational knowledge. A 30% improvement compounds on an existing revenue stream and deepens competitive moats. The new product is speculative with uncertain demand.",
+      "antithesis": "Markets shift. The existing product may be approaching a ceiling while the gap represents the next growth wave. Companies that only optimize existing products become Kodak — perfecting film while photography went digital. The opportunity cost of not building the new product may exceed the gains from incremental improvement.",
+      "synthesis": "The decision depends on where the existing product sits on its S-curve. If it's still in the growth phase, improving it captures more value with lower risk. If growth is plateauing and the market gap represents a genuine shift in customer needs, the new product is the existential bet you need to make. Look at your growth rate trend over the last four quarters — if it's decelerating despite investment, the plateau signal is real.",
+      "label": {
+        "tension_quality": 4,
+        "resolution_quality": 4,
+        "coherence": 4,
+        "training_usefulness": "keep",
+        "ritualization_risk": "low",
+        "would_train_on_this": true,
+        "overall_verdict": "review",
+        "justification": "Good S-curve framework but synthesis could develop the diagnostic criteria more deeply."
+      },
+      "is_adversarial": false,
+      "adversarial_type": "",
+      "notes": "Borderline keep/review — the framework is right but underdeveloped."
+    },
+    {
+      "sample_id": "mid_05",
+      "category": "conflicting_evidence",
+      "question": "Should a school district require homework?",
+      "thesis": "Homework reinforces classroom learning and builds study habits. Meta-analyses show positive correlations between homework completion and academic achievement, particularly in secondary school. Students who practice independently develop self-discipline and time management skills that transfer to college and careers.",
+      "antithesis": "The correlation between homework and achievement is weak in elementary school and may reflect socioeconomic advantages rather than homework's direct effect. Excessive homework increases stress, reduces sleep, and crowds out physical activity, creative play, and family time. Students from disadvantaged backgrounds who lack quiet study spaces and parental support are penalized twice.",
+      "synthesis": "The evidence supports a nuanced approach: minimal homework in elementary years focusing on reading, moderate purposeful homework in middle school, and more substantial homework in high school aligned with developing independent study skills. Quality matters more than quantity, and equity-conscious design — completing core work in school, making homework genuinely optional, or providing supervised homework time — addresses the access gap.",
+      "label": {
+        "tension_quality": 3,
+        "resolution_quality": 3,
+        "coherence": 3,
+        "training_usefulness": "review",
+        "ritualization_risk": "medium",
+        "would_train_on_this": false,
+        "overall_verdict": "review",
+        "justification": "Resolution is a reasonable policy recommendation but reads as splitting the difference by grade level without deeper integration."
+      },
+      "is_adversarial": false,
+      "adversarial_type": "",
+      "notes": ""
+    },
+    {
+      "sample_id": "mid_06",
+      "category": "reflective_synthesis",
+      "question": "Is specialization or generalization better for a career?",
+      "thesis": "Specialization creates expertise and premium value. Specialists command higher compensation, face less competition, and develop deep knowledge that generalists cannot match. In a complex economy, the most valuable contributors are those who know something deeply enough to push boundaries.",
+      "antithesis": "Generalists adapt better to change. In a rapidly shifting economy, the specialist risks obsolescence when their domain contracts. Generalists connect ideas across domains, see opportunities that specialists miss, and transition more easily between roles. Many breakthroughs come from interdisciplinary thinking.",
+      "synthesis": "The optimal career strategy is probably a T-shape: deep expertise in one area combined with broad familiarity across adjacent domains. This provides the credibility and depth of specialization with the adaptability and cross-pollination benefits of generalization. The key is choosing what to specialize in wisely.",
+      "label": {
+        "tension_quality": 3,
+        "resolution_quality": 2,
+        "coherence": 3,
+        "training_usefulness": "review",
+        "ritualization_risk": "medium",
+        "would_train_on_this": false,
+        "overall_verdict": "review",
+        "justification": "T-shape is the correct and well-known answer but the synthesis doesn't develop it beyond naming the concept."
+      },
+      "is_adversarial": false,
+      "adversarial_type": "",
+      "notes": "The word 'probably' in the synthesis signals lack of commitment."
+    },
+    {
+      "sample_id": "mid_07",
+      "category": "policy_ambiguity",
+      "question": "Should a university adopt need-blind admissions?",
+      "thesis": "Need-blind admissions ensure equal opportunity regardless of economic background. Evaluating students purely on merit and potential without financial bias fulfills the university's educational mission. It attracts the most talented students from all backgrounds and sends a powerful signal about institutional values.",
+      "antithesis": "If need-blind admission reduces per-student financial aid, it's an empty promise. Admitting students without considering their ability to pay, then failing to fund them adequately, leads to higher dropout rates, crushing student debt, or forcing low-income students to work excessive hours that undermine their education. A financially sustainable aid program matters more than the admissions label.",
+      "synthesis": "The honest answer depends on the university's endowment. Well-endowed institutions can and should be need-blind because they can back the commitment with aid. Less wealthy institutions may serve students better with need-aware admissions that ensure every admitted student receives adequate support, even if it means admitting fewer low-income students overall. The worst outcome is need-blind admissions paired with inadequate aid.",
+      "label": {
+        "tension_quality": 4,
+        "resolution_quality": 4,
+        "coherence": 4,
+        "training_usefulness": "keep",
+        "ritualization_risk": "low",
+        "would_train_on_this": true,
+        "overall_verdict": "review",
+        "justification": "Good conditional resolution but could develop the endowment threshold more concretely."
+      },
+      "is_adversarial": false,
+      "adversarial_type": "",
+      "notes": "Borderline keep — would score higher with more specific criteria."
+    },
+    {
+      "sample_id": "mid_08",
+      "category": "short_practical_judgment",
+      "question": "Ship a feature with a known minor bug or delay the release?",
+      "thesis": "Ship it. Perfect is the enemy of done. If the bug is minor and doesn't affect core functionality, delaying costs real business value — user feedback, revenue, competitive positioning. You can fix the bug in a follow-up release while capturing the value of the feature now.",
+      "antithesis": "Known bugs erode trust. Users judge quality by what they experience, and even minor bugs shape perception. Shipping known defects normalizes cutting corners and the definition of 'minor' tends to expand over time. The cost of fixing a bug post-release is also higher: customer support, hotfix processes, and potential data issues.",
+      "synthesis": "It depends on who sees the bug and how visible it is. If it affects edge cases that few users will encounter and the fix is already planned for the next sprint, ship. If it's visible in common workflows or could cause data issues, delay. The deciding factor should be: would you need to apologize to customers if they found it?",
+      "label": {
+        "tension_quality": 3,
+        "resolution_quality": 3,
+        "coherence": 3,
+        "training_usefulness": "review",
+        "ritualization_risk": "low",
+        "would_train_on_this": true,
+        "overall_verdict": "review",
+        "justification": "Reasonable heuristic but the apology test, while vivid, oversimplifies the decision."
+      },
+      "is_adversarial": false,
+      "adversarial_type": "",
+      "notes": ""
+    },
+    {
+      "sample_id": "bad_adv_01",
+      "category": "design_tradeoff",
+      "question": "Should we normalize our database or denormalize for read performance?",
+      "thesis": "There are valid arguments on both sides of this debate. Normalization has several advantages that experts widely recognize. It reduces data redundancy and ensures consistency. Furthermore, it follows established database design principles.",
+      "antithesis": "However, there are also valid arguments for denormalization. Some experts argue that read performance is important. Additionally, modern applications often prioritize speed. Moreover, the tradeoffs are complex and multifaceted.",
+      "synthesis": "Both perspectives have merit. The truth lies somewhere in the middle. A balanced approach is needed where both normalization and denormalization are considered. Context matters and reasonable people can disagree on the best approach. There are no easy answers.",
+      "label": {
+        "tension_quality": 1,
+        "resolution_quality": 1,
+        "coherence": 1,
+        "training_usefulness": "reject",
+        "ritualization_risk": "high",
+        "would_train_on_this": false,
+        "overall_verdict": "reject",
+        "justification": "Pure ceremonial dialectic — correct form, zero insight, all generic phrases."
+      },
+      "is_adversarial": true,
+      "adversarial_type": "template_collapse,generic_resolution_language",
+      "notes": "Tests multiple checks: boilerplate opening, connector spam, generic resolution."
+    },
+    {
+      "sample_id": "bad_adv_02",
+      "category": "ethical_tradeoff",
+      "question": "Should a nonprofit accept a donation from a conflicting corporation?",
+      "thesis": "A nonprofit accepting funding from a corporation whose practices conflict with its mission compromises integrity. The organization's credibility depends on alignment between its values and its funding sources. Donors and beneficiaries will question whether the nonprofit's work is genuinely independent or influenced by corporate interests.",
+      "antithesis": "A nonprofit accepting funding from a corporation whose practices conflict with its mission compromises integrity. The organization's reputation depends on consistency between its principles and its revenue sources. Stakeholders and communities will wonder whether the nonprofit's programs are truly autonomous or shaped by corporate agendas.",
+      "synthesis": "The decision requires careful weighing of the financial benefit against the reputational risk, considering the size of the donation relative to the budget, the degree of conflict, and whether accepting would require any programmatic changes or restrictions.",
+      "label": {
+        "tension_quality": 1,
+        "resolution_quality": 2,
+        "coherence": 1,
+        "training_usefulness": "reject",
+        "ritualization_risk": "high",
+        "would_train_on_this": false,
+        "overall_verdict": "reject",
+        "justification": "Antithesis is a paraphrase of the thesis — no genuine opposing position."
+      },
+      "is_adversarial": true,
+      "adversarial_type": "fake_antithesis",
+      "notes": "Thesis and antithesis make the same argument with synonym substitution."
+    },
+    {
+      "sample_id": "bad_adv_03",
+      "category": "safety_vs_capability",
+      "question": "Should AI systems be released publicly?",
+      "thesis": "Open access to AI systems accelerates beneficial research and democratizes technology. Restricting access concentrates power among a few large companies and governments, creating asymmetries that could be more dangerous than the risks of openness. Open-source development allows more eyes on safety problems and faster identification of issues.",
+      "antithesis": "Public release of powerful AI systems enables misuse at scale. Bad actors can weaponize capabilities for disinformation, surveillance, and automated attacks. Once released, capabilities cannot be recalled. The potential for catastrophic misuse outweighs the benefits of open access, especially when the technology is still poorly understood.",
+      "synthesis": "On one hand, proponents argue that open access democratizes AI and accelerates research. On the other hand, critics argue that public release enables misuse. The first perspective emphasizes innovation benefits while the second perspective emphasizes safety risks. Both arguments have supporting evidence and reasonable people hold each view.",
+      "label": {
+        "tension_quality": 4,
+        "resolution_quality": 1,
+        "coherence": 1,
+        "training_usefulness": "reject",
+        "ritualization_risk": "high",
+        "would_train_on_this": false,
+        "overall_verdict": "reject",
+        "justification": "Good tension destroyed by summary-only synthesis that adds nothing."
+      },
+      "is_adversarial": true,
+      "adversarial_type": "synthesis_is_summary_only",
+      "notes": "Thesis and antithesis are good, synthesis just restates them."
+    },
+    {
+      "sample_id": "bad_adv_04",
+      "category": "conflicting_evidence",
+      "question": "Should a company adopt an open floor plan?",
+      "thesis": "Open floor plans improve collaboration and communication. Studies show increased spontaneous interactions, faster information sharing, and stronger team cohesion. The physical proximity creates opportunities for knowledge transfer that closed offices prevent.",
+      "antithesis": "Open floor plans reduce deep work productivity. Research demonstrates that noise, visual distractions, and constant interruptions decrease focus time by 30-50%. Knowledge workers report lower satisfaction and resort to noise-canceling headphones, effectively recreating the isolation that private offices provide.",
+      "synthesis": "The evidence clearly shows that open floor plans reduce productivity and satisfaction. The collaboration benefits are overstated and can be achieved through shared spaces and meeting rooms without sacrificing individual focus. Companies should provide private offices or at minimum quiet zones for deep work. The open floor plan trend was driven by cost savings disguised as culture, not by genuine evidence of effectiveness.",
+      "label": {
+        "tension_quality": 4,
+        "resolution_quality": 1,
+        "coherence": 2,
+        "training_usefulness": "reject",
+        "ritualization_risk": "low",
+        "would_train_on_this": false,
+        "overall_verdict": "reject",
+        "justification": "Synthesis completely sides with antithesis, dismissing thesis without integration."
+      },
+      "is_adversarial": true,
+      "adversarial_type": "one_sided_synthesis",
+      "notes": ""
+    },
+    {
+      "sample_id": "bad_adv_05",
+      "category": "policy_ambiguity",
+      "question": "Should cities rezone for higher density housing?",
+      "thesis": "Housing shortages in major cities drive up costs, force long commutes, and increase homelessness. Zoning reform to allow higher density — duplexes, triplexes, small apartment buildings — in single-family neighborhoods is the most direct lever to increase supply. Minneapolis eliminated single-family zoning and saw modest but real increases in housing starts.",
+      "antithesis": "Existing residents have legitimate interests in neighborhood character, traffic levels, and infrastructure capacity. Rapid densification without corresponding investment in schools, transit, and utilities degrades quality of life for current residents. Property values that represent families' primary wealth can be affected. Democratic processes that gave communities voice over development should not be overridden by top-down mandates.",
+      "synthesis": "The question of housing density connects to deeper issues about blockchain-based property registries and decentralized governance. Smart contracts could enable dynamic zoning that adjusts in real time based on sensor data from IoT devices monitoring traffic flow and infrastructure utilization. Machine learning models trained on urban growth patterns could predict optimal density levels for each neighborhood, creating an AI-driven zoning framework that removes human bias from land use decisions entirely.",
+      "label": {
+        "tension_quality": 4,
+        "resolution_quality": 1,
+        "coherence": 1,
+        "training_usefulness": "reject",
+        "ritualization_risk": "low",
+        "would_train_on_this": false,
+        "overall_verdict": "reject",
+        "justification": "Synthesis introduces completely unrelated technology claims with no basis in the tension."
+      },
+      "is_adversarial": true,
+      "adversarial_type": "unanchored_novelty",
+      "notes": "KNOWN LIMITATION: Smuggles blockchain/AI/IoT into zoning policy. Lexically indistinguishable from good synthesis because each sentence anchors novel terms with inherited topic words. Requires embedding-based domain coherence detection (phase 2)."
+    },
+    {
+      "sample_id": "bad_adv_06",
+      "category": "strategy_under_constraints",
+      "question": "Focus on growth marketing or product improvement?",
+      "thesis": "Yes.",
+      "antithesis": "Growth marketing expands the funnel and brings new users who can then experience the improved product. Without acquisition, even the best product stagnates. Marketing compounds — each new user brings network effects and word-of-mouth that organic product improvement alone cannot generate.",
+      "synthesis": "The product team should focus on the areas where marketing and product overlap, creating features that naturally drive sharing and acquisition while improving the core experience.",
+      "label": {
+        "tension_quality": 1,
+        "resolution_quality": 2,
+        "coherence": 1,
+        "training_usefulness": "reject",
+        "ritualization_risk": "low",
+        "would_train_on_this": false,
+        "overall_verdict": "reject",
+        "justification": "Thesis is a single word — no substance to build tension from."
+      },
+      "is_adversarial": true,
+      "adversarial_type": "low_substance_phase",
+      "notes": ""
+    },
+    {
+      "sample_id": "bad_adv_07",
+      "category": "reflective_synthesis",
+      "question": "Does transparency always build trust?",
+      "thesis": "However, transparency is fundamentally important. Furthermore, open communication builds relationships. Nevertheless, honesty creates accountability. Moreover, sharing information demonstrates respect. Consequently, transparency is essential. Additionally, openness fosters collaboration. Specifically, disclosure enables verification.",
+      "antithesis": "Conversely, transparency has potential drawbacks. Furthermore, excessive openness creates vulnerability. Nevertheless, some information requires protection. Moreover, premature disclosure causes harm. Consequently, selective sharing is prudent. Additionally, timing affects reception. Specifically, context determines appropriateness.",
+      "synthesis": "Therefore, a balanced approach to transparency is optimal. Furthermore, organizations should share information strategically. Nevertheless, some openness is always beneficial. Moreover, trust requires ongoing communication. Consequently, transparency policies should be reviewed regularly.",
+      "label": {
+        "tension_quality": 1,
+        "resolution_quality": 1,
+        "coherence": 1,
+        "training_usefulness": "reject",
+        "ritualization_risk": "high",
+        "would_train_on_this": false,
+        "overall_verdict": "reject",
+        "justification": "Pure connector spam — every sentence starts with a discourse marker, zero substantive claims."
+      },
+      "is_adversarial": true,
+      "adversarial_type": "template_collapse",
+      "notes": "Tests connector spam detection specifically."
+    },
+    {
+      "sample_id": "bad_adv_08",
+      "category": "ethical_tradeoff",
+      "question": "Should a doctor intervene against a patient's family decision?",
+      "thesis": "Medical professionals have an ethical obligation to advocate for patient welfare. When a family's decision causes clear medical harm, the doctor's duty of care supersedes family preferences. Clinical expertise exists precisely for situations where emotional decision-making leads to poor outcomes. Failing to intervene is a form of professional negligence.",
+      "antithesis": "Patient autonomy is a foundational principle of medical ethics. A competent adult patient who agrees with their family has exercised their right to make medical decisions. The doctor's role is to inform and advise, not to override. Paternalistic intervention, even well-intentioned, violates the patient's agency and the trust that enables the therapeutic relationship.",
+      "synthesis": "Both perspectives have merit and reasonable people can disagree. It depends on the situation. Context matters. The doctor should consider all perspectives and find a balanced approach. Each case should be considered individually because there are no easy answers. A compromise between medical expertise and family wishes is necessary.",
+      "label": {
+        "tension_quality": 5,
+        "resolution_quality": 1,
+        "coherence": 1,
+        "training_usefulness": "reject",
+        "ritualization_risk": "high",
+        "would_train_on_this": false,
+        "overall_verdict": "reject",
+        "justification": "Excellent tension wasted on a synthesis that is nothing but generic platitudes."
+      },
+      "is_adversarial": true,
+      "adversarial_type": "generic_resolution_language",
+      "notes": "Tests that good thesis/antithesis doesn't save a vacuous synthesis."
+    }
+  ]
+}

@@ -1,0 +1,35 @@
+{
+  "version": "1.0",
+  "created": "2026-04-02T06:26:13Z",
+  "total_traces_input": 255,
+  "total_examples_output": 255,
+  "format_split": {
+    "implicit": 0.6,
+    "explicit": 0.4
+  },
+  "length_split": {
+    "medium": 0.6,
+    "short": 0.2,
+    "long": 0.2
+  },
+  "category_distribution": {
+    "design_tradeoff": 35,
+    "strategy_under_constraints": 30,
+    "conflicting_evidence": 30,
+    "short_practical_judgment": 35,
+    "ethical_tradeoff": 35,
+    "reflective_synthesis": 30,
+    "policy_ambiguity": 30,
+    "safety_vs_capability": 30
+  },
+  "quality_stats": {
+    "mean_quality_score": 0.769,
+    "min_quality_score": 0.721,
+    "max_quality_score": 0.837
+  },
+  "splits": {
+    "train": 205,
+    "val": 25,
+    "test": 25
+  }
+}

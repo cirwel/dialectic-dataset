@@ -16,7 +16,11 @@ size_categories:
 
 # Dialectic Reasoning Traces
 
-255 scored dialectic reasoning traces for training models on integrative resolution under conflicting frames.
+255 scored dialectic reasoning traces for training models on integrative resolution under conflicting frames. Instead of list-format pros/cons or generic hedging, these traces teach models to identify real tension, make conditional commitments, and reach specific resolutions.
+
+## Version Note
+
+This dataset contains only v1 traces — the clean, non-fabricating training data. An earlier version on this repo included augmented data from later pipeline iterations (v2-v8) that suffered from a [GIGO feedback loop](https://github.com/CIRWEL/dialectic-dataset/blob/main/docs/post_mortem.md) where the scorer rewarded fabrication and best-of-N amplified it. That data has been removed. The two models trained on this v1 data ([8B](https://huggingface.co/hikewa/dialectic-qwen3-8b-lora), [1.5B](https://huggingface.co/hikewa/dialectic-qwen2.5-1.5b-lora)) are the only ones that don't fabricate.
 
 ## What This Is
 
@@ -26,13 +30,15 @@ All traces were:
 - Generated via Claude Sonnet
 - Scored by a rule-based quality pipeline (tension quality, resolution quality, cross-phase coherence, synthesis sufficiency)
 - Filtered to quality score >= 0.72 with structural checks passed
+- Verified to contain no fabricated citations or statistics
 
 ## Dataset Structure
 
-- `traces.jsonl` — 255 scored traces with full metadata
-- `training/train.jsonl` — 205 examples in chat format (messages array)
-- `training/val.jsonl` — 25 validation examples
-- `training/test.jsonl` — 25 test examples
+| Split | Examples |
+|-------|----------|
+| Train | 205 |
+| Val | 25 |
+| Test | 25 |
 
 Training examples are formatted as either:
 - **Explicit** (40%): thesis + antithesis + synthesis shown as separate paragraphs
@@ -57,10 +63,21 @@ Training examples are formatted as either:
 - Range: [0.721, 0.837]
 - Acceptance rate: 94.1%
 
+## Limitations
+
+These traces produce structured dialectic output but not genuine dialectic reasoning. The models trained on this data present "Perspective A, Perspective B, it depends" rather than synthesizing insights that neither perspective alone reveals. See the [post-mortem](https://github.com/CIRWEL/dialectic-dataset/blob/main/docs/post_mortem.md) for analysis and the [next-generation design](https://github.com/CIRWEL/dialectic-dataset/blob/main/docs/next_generation_design.md) for planned improvements.
+
 ## Intended Use
 
 Fine-tuning small language models to produce better tradeoff reasoning — conditional answers, integrative resolution, resistance to shallow both-sides framing.
 
+## Models Trained on This Data
+
+- [hikewa/dialectic-qwen3-8b-lora](https://huggingface.co/hikewa/dialectic-qwen3-8b-lora) — Best overall, honest
+- [hikewa/dialectic-qwen2.5-1.5b-lora](https://huggingface.co/hikewa/dialectic-qwen2.5-1.5b-lora) — Lightweight, never fabricates
+
+Try them: [HuggingFace Space](https://huggingface.co/spaces/hikewa/dialectic-reasoning)
+
 ## Pipeline
 
-Built with [dialectic-dataset](https://github.com/hikewa/dialectic-dataset) pipeline.
+Built with [dialectic-dataset](https://github.com/CIRWEL/dialectic-dataset).

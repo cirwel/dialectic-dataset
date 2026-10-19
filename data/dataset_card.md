@@ -20,7 +20,9 @@ size_categories:
 
 ## Version Note
 
-This dataset contains only v1 traces — the clean, non-fabricating training data. An earlier version on this repo included augmented data from later pipeline iterations (v2-v8) that suffered from a [GIGO feedback loop](https://github.com/CIRWEL/dialectic-dataset/blob/main/docs/post_mortem.md) where the scorer rewarded fabrication and best-of-N amplified it. That data has been removed. The two models trained on this v1 data ([8B](https://huggingface.co/hikewa/dialectic-qwen3-8b-lora), [1.5B](https://huggingface.co/hikewa/dialectic-qwen2.5-1.5b-lora)) are the only ones that don't fabricate.
+This dataset contains only v1 traces, generated before the scoring changes described here. An earlier version on this repo included augmented data from later pipeline iterations (v2-v8) that suffered from a [GIGO feedback loop](https://github.com/CIRWEL/dialectic-dataset/blob/main/docs/post_mortem.md) where the scorer rewarded fabrication and best-of-N amplified it. That data has been removed. The post-mortem also describes which models were affected.
+
+Training-set sizes: the [1.5B adapter](https://huggingface.co/hikewa/dialectic-qwen2.5-1.5b-lora) was trained on this release (205 training examples). The [8B adapter](https://huggingface.co/hikewa/dialectic-qwen3-8b-lora) was trained on a 408-example split of a larger 510-trace corpus, per the [training manifest](https://huggingface.co/datasets/hikewa/dialectic-reasoning-traces/blob/ab5811e95678e0b0a1f601b76111e60dfadf25e5/training_combined/manifest.json) in the Hugging Face dataset repo's history; that split is not in the current release.
 
 ## What This Is
 
@@ -30,7 +32,7 @@ All traces were:
 - Generated via Claude Sonnet
 - Scored by a rule-based quality pipeline (tension quality, resolution quality, cross-phase coherence, synthesis sufficiency)
 - Filtered to quality score >= 0.72 with structural checks passed
-- Verified to contain no fabricated citations or statistics
+- Checked for fabricated citations and statistics; none were observed across the 255 traces (this is not a guarantee of factual accuracy)
 
 ## Dataset Structure
 
@@ -73,8 +75,8 @@ Fine-tuning small language models to produce better tradeoff reasoning — condi
 
 ## Models Trained on This Data
 
-- [hikewa/dialectic-qwen3-8b-lora](https://huggingface.co/hikewa/dialectic-qwen3-8b-lora) — Best overall, honest
-- [hikewa/dialectic-qwen2.5-1.5b-lora](https://huggingface.co/hikewa/dialectic-qwen2.5-1.5b-lora) — Lightweight, never fabricates
+- [hikewa/dialectic-qwen2.5-1.5b-lora](https://huggingface.co/hikewa/dialectic-qwen2.5-1.5b-lora): 1.5B adapter, trained on this release
+- [hikewa/dialectic-qwen3-8b-lora](https://huggingface.co/hikewa/dialectic-qwen3-8b-lora): 8B adapter, trained on the 408-example split described above
 
 Try them: [HuggingFace Space](https://huggingface.co/spaces/hikewa/dialectic-reasoning)
 

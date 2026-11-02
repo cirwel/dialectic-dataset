@@ -96,6 +96,21 @@ class TestThinkingFeaturesAndScoring:
         assert not score.has_genuine_thinking
         assert score.formulaic_penalty > 0.2
 
+    def test_meta_rubric_echo_in_thinking_disqualified(self):
+        meta_echo = (
+            "<think>\n"
+            "Here's a thinking process designed to meet all constraints:\n"
+            "1. **Analyze the Core Tension:** Speed vs quality.\n"
+            "2. **Initial Impulse (The Easy Answer):** Move fast because startups need feedback.\n"
+            "3. **Reconsideration/Self-Correction (Wait...):** Actually, that assumes debt is cheap.\n"
+            "</think>\n\n"
+            "If the team has fewer than 10 engineers, prioritize speed; above 50 engineers, prioritize quality."
+        )
+        score = score_thinking_quality(meta_echo)
+        assert score.features.meta_echo_count >= 3
+        assert not score.has_genuine_thinking
+        assert score.formulaic_penalty >= 0.50
+
 
 class TestStage1GenerationPreservesThinking:
     def test_format_with_thinking_wraps_separate_thinking_field(self):

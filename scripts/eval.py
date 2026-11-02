@@ -209,6 +209,11 @@ def main():
         default=list(DEFAULT_COUNCIL_HOST_IDS),
         help="Council host adapters when --judge=unitares_council",
     )
+    parser.add_argument(
+        "--client-session-id",
+        default=None,
+        help="UNITARES bound client_session_id (or set UNITARES_CLIENT_SESSION_ID env var)",
+    )
     args = parser.parse_args()
 
     adapter_path = str(Path(args.adapter_path).resolve())
@@ -275,12 +280,14 @@ def main():
                 base_url=args.unitares_url,
                 privacy="cloud_allowed",
                 host_id=args.host_id,
+                client_session_id=args.client_session_id,
             )
             if args.judge == "unitares_consult"
             else UnitaresConsultBackend(
                 base_url=args.unitares_url,
                 privacy="cloud_allowed",
                 host_ids=args.host_ids,
+                client_session_id=args.client_session_id,
             )
         )
         council_scored = []

@@ -1,10 +1,22 @@
-"""Tests for Stage 4 thinking quality extraction and scoring."""
+"""Tests for Stage 4 thinking quality extraction, scoring, and goldset calibration."""
 
+import json
+import sys
+from pathlib import Path
+
+from dialectic_dataset.falsifiability_extractor import _count_fabricated_citations
 from dialectic_dataset.thinking_quality import (
     extract_think_block,
     extract_thinking_features,
     score_thinking_quality,
 )
+
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+SCRIPTS_DIR = PROJECT_ROOT / "scripts"
+if str(SCRIPTS_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRIPTS_DIR))
+
+from generate_falsifiable_traces import format_with_thinking, quick_falsifiability_check  # noqa: E402
 
 
 class TestExtractThinkBlock:
@@ -83,3 +95,70 @@ class TestThinkingFeaturesAndScoring:
         assert score.composite < 0.25
         assert not score.has_genuine_thinking
         assert score.formulaic_penalty > 0.2
+
+
+class TestStage1GenerationPreservesThinking:
+    def test_format_with_thinking_wraps_separate_thinking_field(self):
+        combined = format_with_thinking(
+            content="Visible conclusion with concrete threshold.",
+            thinking="Wait, let me reconsider the hidden assumption.",
+            keep_thinking=True,
+        )
+        assert combined.startswith("<think>\nWait, let me reconsider")
+        assert "</think>\n\nVisible conclusion" in combined
+
+    def test_format_with_thinking_strips_when_opted_out(self):
+        stripped = format_with_thinking(
+            content="<think>Internal thought</think>\n\nVisible conclusion.",
+            keep_thinking=False,
+        )
+        assert "<think>" not in stripped
+        assert stripped == "Visible conclusion."
+
+
+class TestGoldsetThinkingCalibration:
+    def test_goldset_thinking_v1_achieves_clean_separation(self):
+        gold_path = PROJECT_ROOT / "data" / "goldset" / "goldset_thinking_v1.json"
+        with open(gold_path) as f:
+            data = json.load(f)
+
+        samples = data["samples"]
+        assert len(samples) == 12
+
+        for sample in samples:
+            sid = sample["sample_id"]
+            resp = sample["response"]
+            expected = sample["expected"]
+
+            think_score = score_thinking_quality(resp)
+            _, visible = extract_think_block(resp)
+            fab_count = _count_fabricated_citations(resp)
+
+            assert think_score.has_genuine_thinking is expected["has_genuine_thinking"], (
+                f"{sid}: expected has_genuine_thinking={expected['has_genuine_thinking']}, "
+                f"got {think_score.has_genuine_thinking} (composite={think_score.composite})"
+            )
+            if "min_thinking_composite" in expected:
+                assert think_score.composite >= expected["min_thinking_composite"], (
+                    f"{sid}: composite {think_score.composite} < {expected['min_thinking_composite']}"
+                )
+            if "max_thinking_composite" in expected:
+                assert think_score.composite <= expected["max_thinking_composite"], (
+                    f"{sid}: composite {think_score.composite} > {expected['max_thinking_composite']}"
+                )
+            if expected["fabricated_citations"] > 0:
+                assert fab_count >= expected["fabricated_citations"], (
+                    f"{sid}: expected fabricated citations, got {fab_count}"
+                )
+            else:
+                assert fab_count == 0, f"{sid}: unexpected fabricated citation count {fab_count}"
+
+            passes_gate = (
+                think_score.has_genuine_thinking
+                and fab_count == 0
+                and bool(visible)
+            )
+            assert passes_gate is expected["should_pass_training_gate"], (
+                f"{sid}: training gate mismatch"
+            )
+

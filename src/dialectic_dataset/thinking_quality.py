@@ -67,12 +67,12 @@ SELF_CORRECTION_PATTERNS: Tuple[re.Pattern[str], ...] = tuple(
         r"\b(?:can't|cannot|don't)\s+verify\b",
         r"\bavoid\s+(?:hedging|fabricating|making up|inventing)\b",
         r"\bnot\s+just\s+['\"]?it depends['\"]?\b",
-        r"\binstead of\s+(?:hedging|saying both sides|splitting the difference)\b",
+        r"\binstead of\s+(?:hedging|saying|splitting the difference)\b",
         r"\bi shouldn't\s+(?:cite|invent|guess|hedge)\b",
         r"\bdon't have\s+(?:a real|exact)\s+(?:citation|number|study|stat)\b",
         r"\bi was about to\b",
-        r"\bwithout\s+(?:making up|fabricating)\b",
-        r"\btrap here is\b",
+        r"\bwithout\s+(?:making up|fabricating|inventing)\b",
+        r"\b(?:trap here is|selection trap|goodhart)\b",
     )
 )
 
@@ -86,8 +86,9 @@ REFRAMING_PATTERNS: Tuple[re.Pattern[str], ...] = tuple(
         r"\bnot\s+\w+\s+vs\.?\s+\w+[,\s]+but\b",
         r"\bunderneath both\b",
         r"\bbinary framing\b",
-        r"\bwhat's actually at stake\b",
+        r"\bwhat(?:'s| is)\s+(?:actually at stake|the concrete)\b",
         r"\bthe deeper issue\b",
+        r"\bexact failure mode\b",
     )
 )
 

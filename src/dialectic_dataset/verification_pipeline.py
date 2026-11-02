@@ -393,10 +393,10 @@ class UnitaresConsultBackend:
         self._transport = transport or _default_http_transport
 
     def _call_consult(self, question: str, context: str) -> Dict[str, Any]:
+        brief = f"{question.strip()}\n\n{context.strip()}"
         arguments: Dict[str, Any] = {
             "purpose": "critique",
-            "question": question,
-            "context": context,
+            "brief": brief,
             "privacy": self.privacy,
         }
         if self.host_ids:
@@ -418,9 +418,9 @@ class UnitaresConsultBackend:
     def _extract_consult_responses(api_result: Dict[str, Any]) -> List[Tuple[str, str]]:
         """Extract ``(reviewer_id, response_text)`` pairs from UNITARES consult output.
 
-        Handles both single-perspective responses (``{"response": "..."}``) and
-        council responses (``{"perspectives": [{"host_id": ..., "response": ...}]}``),
-        as well as MCP-wrapped ``result`` / ``content`` envelopes.
+        Handles ``unitares.consultation.v1`` (``{"advice": "...", "request": {"host_id": ...}}``),
+        council responses (``{"perspectives": [...]}`` or ``{"lanes": [...]}``),
+        and MCP-wrapped ``result`` / ``content`` envelopes.
         """
         inner: Any = api_result
         if isinstance(inner, dict) and "result" in inner:
@@ -432,14 +432,14 @@ class UnitaresConsultBackend:
                         inner = json.loads(block["text"])
                         break
                     except (json.JSONDecodeError, KeyError):
-                        inner = {"response": block.get("text", "")}
+                        inner = {"advice": block.get("text", "")}
                         break
 
         if not isinstance(inner, dict):
             return [("consult", str(inner))]
 
         # Multi-host council response
-        perspectives = inner.get("perspectives") or inner.get("results")
+        perspectives = inner.get("perspectives") or inner.get("lanes") or inner.get("results")
         if isinstance(perspectives, list) and perspectives:
             pairs: List[Tuple[str, str]] = []
             for idx, item in enumerate(perspectives):
@@ -450,20 +450,33 @@ class UnitaresConsultBackend:
                         or item.get("backend")
                         or f"council_{idx}"
                     )
-                    text = str(item.get("response") or item.get("text") or "")
+                    text = str(
+                        item.get("advice")
+                        or item.get("response")
+                        or item.get("text")
+                        or ""
+                    )
                     if text.strip():
                         pairs.append((rev, text))
             if pairs:
                 return pairs
 
-        # Single-host consult response
+        # Single-host consult response (unitares.consultation.v1 uses top-level `advice`)
+        req_meta = inner.get("request") if isinstance(inner.get("request"), dict) else {}
         reviewer = str(
             inner.get("host_id")
+            or req_meta.get("host_id")
             or inner.get("model")
+            or inner.get("family")
             or inner.get("backend")
             or "consult"
         )
-        text = str(inner.get("response") or inner.get("answer") or "")
+        text = str(
+            inner.get("advice")
+            or inner.get("response")
+            or inner.get("answer")
+            or ""
+        )
         return [(reviewer, text)]
 
     def run_verification(self, question: str, response: str) -> List[VerificationResult]:

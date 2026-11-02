@@ -148,13 +148,13 @@ class TestUnitaresConsultBackend:
 
         def fake_transport(url, payload, timeout):
             calls.append((url, payload))
-            if "Verify factual claims" in payload["arguments"]["question"]:
+            if "Verify factual claims" in payload["arguments"]["brief"]:
                 return {
                     "result": {
                         "perspectives": [
                             {
                                 "host_id": "claude:host-adapter",
-                                "response": json.dumps(
+                                "advice": json.dumps(
                                     {
                                         "claims": [],
                                         "resolves_tension": True,
@@ -166,7 +166,7 @@ class TestUnitaresConsultBackend:
                             },
                             {
                                 "host_id": "codex:host-adapter",
-                                "response": json.dumps(
+                                "advice": json.dumps(
                                     {
                                         "claims": [],
                                         "resolves_tension": True,
@@ -184,7 +184,7 @@ class TestUnitaresConsultBackend:
                     "perspectives": [
                         {
                             "host_id": "claude:host-adapter",
-                            "response": json.dumps(
+                            "advice": json.dumps(
                                 {
                                     "weakest_point": "Minor",
                                     "strongest_counterargument": "Edge case",
@@ -196,7 +196,7 @@ class TestUnitaresConsultBackend:
                         },
                         {
                             "host_id": "codex:host-adapter",
-                            "response": json.dumps(
+                            "advice": json.dumps(
                                 {
                                     "weakest_point": "Minor",
                                     "strongest_counterargument": "Edge case",

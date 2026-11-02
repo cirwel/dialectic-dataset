@@ -52,7 +52,7 @@ def enrich_trace_record(
     think_score = score_thinking_quality(raw_response)
     _, visible_response = extract_think_block(raw_response)
 
-    fab_citations = _count_fabricated_citations(visible_response)
+    fab_citations = _count_fabricated_citations(raw_response)
     fals_features = extract_falsifiability_features(visible_response)
     fals_score = score_falsifiability(fals_features)
 

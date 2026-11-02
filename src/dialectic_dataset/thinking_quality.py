@@ -154,6 +154,10 @@ def extract_think_block(response: str) -> Tuple[Optional[str], str]:
             think_part, rest = response.split("</think>", 1)
             think_clean = re.sub(r"^<think>", "", think_part, flags=re.IGNORECASE).strip()
             return think_clean, rest.strip()
+        if re.search(r"<think>", response, flags=re.IGNORECASE):
+            # Unclosed <think> tag: treat content after <think> as unclosed thinking, leaving visible output empty
+            parts = re.split(r"<think>", response, maxsplit=1, flags=re.IGNORECASE)
+            return parts[1].strip(), ""
         return None, response.strip()
 
     think_text = "\n\n".join(m.strip() for m in matches if m.strip())
@@ -286,6 +290,7 @@ def score_thinking_quality(response_or_features: str | ThinkingFeatures) -> Thin
         features.think_word_count >= MIN_GENUINE_THINK_WORDS
         and deliberative_signals >= 2
         and features.mechanism_count >= 1
+        and features.think_to_output_divergence < 1.0
         and composite >= 0.45
     )
 

@@ -26,6 +26,14 @@ class TestExtractThinkBlock:
         assert think == ""
         assert visible == "Polished output."
 
+    def test_unclosed_think_tag_does_not_leak_into_visible(self):
+        raw = "<think>Wait, let me reconsider this because the mechanism is complex..."
+        think, visible = extract_think_block(raw)
+        assert "Wait, let me reconsider" in think
+        assert visible == ""
+        score = score_thinking_quality(raw)
+        assert not score.has_genuine_thinking
+
 
 class TestThinkingFeaturesAndScoring:
     def test_missing_or_empty_think_scores_zero(self):

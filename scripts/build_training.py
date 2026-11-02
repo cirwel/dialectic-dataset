@@ -163,8 +163,11 @@ def main():
                     continue
 
                 _, visible_response = extract_think_block(raw_response)
+                if not visible_response:
+                    continue
 
-                fab = _count_fabricated_citations(visible_response)
+                fab_target = raw_response if args.keep_thinking else visible_response
+                fab = _count_fabricated_citations(fab_target)
                 if fab > args.max_fabrication:
                     continue
 

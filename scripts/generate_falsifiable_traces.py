@@ -31,8 +31,13 @@ import sys
 sys.path.insert(0, str(PROJECT_ROOT / "src"))
 
 from dialectic_dataset.falsifiability_extractor import (
+    _count_fabricated_citations,
     extract_falsifiability_features,
     score_falsifiability,
+)
+from dialectic_dataset.thinking_quality import (
+    extract_think_block,
+    score_thinking_quality,
 )
 
 # ---------------------------------------------------------------------------
@@ -97,7 +102,13 @@ PROVIDERS = {
 
 FALSIFIABLE_PROMPT = """You are reasoning through a genuine tension.
 
-Your response MUST contain:
+First, think through the problem inside <think>...</think> tags. In your <think> block, you MUST:
+- Notice your initial impulse and reconsider where it might be wrong ("Wait...", "Actually...", "Let me reconsider...")
+- Surface at least one hidden assumption in the question's framing ("That assumes that...", "The real tension is not X vs Y, but...")
+- Catch yourself if you are about to hedge or cite a statistic/study you cannot verify ("I shouldn't invent a study or hedge with 'it depends'...")
+- Reason through the concrete causal mechanism before writing your final response.
+
+After closing </think>, write your final response. Your visible response MUST contain:
 1. At least one claim with a specific mechanism, threshold, or condition (real numbers welcome but not required)
 2. At least one conditional that names the SPECIFIC variable — not "context" or "circumstances" but a measurable thing (team size, revenue, timeline, survival rate, etc.)
 3. At least one prediction that could be checked — something that would be wrong if your reasoning is wrong
@@ -117,14 +128,29 @@ Specificity comes from naming the concrete variables, thresholds, and failure mo
 
 Question: {question}
 
-Respond directly. No JSON. No labels. Just reason through it with specific, checkable claims."""
+Begin with <think>...</think> and then respond directly with no JSON or section labels."""
 
 
 # ---------------------------------------------------------------------------
 # API call
 # ---------------------------------------------------------------------------
 
-def _call_ollama_chat(model: str, prompt: str) -> str | None:
+def format_with_thinking(
+    content: str,
+    thinking: str | None = None,
+    keep_thinking: bool = True,
+) -> str:
+    """Combine separate thinking/reasoning fields with content, preserving <think> blocks by default."""
+    text = (content or "").strip()
+    extra_think = (thinking or "").strip()
+    if extra_think and "<think>" not in text:
+        text = f"<think>\n{extra_think}\n</think>\n\n{text}".strip()
+    if not keep_thinking and "</think>" in text:
+        text = text.split("</think>", 1)[1].strip()
+    return text
+
+
+def _call_ollama_chat(model: str, prompt: str, keep_thinking: bool = True) -> str | None:
     """Fallback to Ollama's native /api/chat for thinking models (e.g. Gemma 4)
     that return empty content via the OpenAI-compatible endpoint.
     Uses num_predict=4096 so thinking models have budget for both
@@ -140,14 +166,16 @@ def _call_ollama_chat(model: str, prompt: str) -> str | None:
         resp.raise_for_status()
         msg = resp.json().get("message", {})
         text = msg.get("content", "")
-        return text.strip() if text else None
+        thinking = msg.get("thinking") or msg.get("reasoning_content")
+        combined = format_with_thinking(text, thinking=thinking, keep_thinking=keep_thinking)
+        return combined if combined else None
     except Exception as e:
         logger.warning(f"  Ollama chat API error: {e}")
         return None
 
 
-def call_provider(provider_key: str, question: str) -> str | None:
-    """Call a provider and return raw response text."""
+def call_provider(provider_key: str, question: str, keep_thinking: bool = True) -> str | None:
+    """Call a provider and return response text (preserving <think> blocks by default)."""
     cfg = PROVIDERS[provider_key]
     is_ollama = cfg["env_key"] == "_OLLAMA"
     api_key = None if is_ollama else os.environ.get(cfg["env_key"])
@@ -168,7 +196,7 @@ def call_provider(provider_key: str, question: str) -> str | None:
         "model": cfg["model"],
         "messages": [{"role": "user", "content": prompt}],
         "temperature": 0.7,
-        "max_tokens": 1024,
+        "max_tokens": 1536,
     }
 
     for attempt in range(3):
@@ -189,15 +217,16 @@ def call_provider(provider_key: str, question: str) -> str | None:
             data = resp.json()
             msg = data["choices"][0]["message"]
             text = msg.get("content", "")
+            thinking = msg.get("thinking") or msg.get("reasoning_content")
             if not text and is_ollama:
                 logger.info(f"  Empty via OpenAI endpoint, trying native chat API")
-                text = _call_ollama_chat(cfg["model"], prompt)
+                text = _call_ollama_chat(cfg["model"], prompt, keep_thinking=keep_thinking)
                 if text:
-                    return strip_artifacts(text)
+                    return text
             if not text:
                 logger.warning(f"  Empty content from {cfg['name']}")
                 continue
-            return strip_artifacts(text)
+            return format_with_thinking(text, thinking=thinking, keep_thinking=keep_thinking)
 
         except requests.exceptions.Timeout:
             logger.warning(f"  Timeout on {cfg['name']}, attempt {attempt + 1}")
@@ -220,22 +249,29 @@ def call_provider(provider_key: str, question: str) -> str | None:
 
 
 def strip_artifacts(text: str) -> str:
-    text = text.strip()
-    if "</think>" in text:
-        text = text.split("</think>", 1)[1].strip()
-    return text
+    """Strip <think> blocks when visible-only output is explicitly requested."""
+    _, visible = extract_think_block(text)
+    return visible
 
 
 # ---------------------------------------------------------------------------
-# Falsifiability quality gate
+# Falsifiability + Stage 4 Thinking quality gate
 # ---------------------------------------------------------------------------
 
 def quick_falsifiability_check(response: str) -> tuple[bool, list[str], float]:
-    """Fast falsifiability gate. Returns (passed, issues, composite)."""
-    features = extract_falsifiability_features(response)
+    """Fast falsifiability + fabrication gate on visible output. Returns (passed, issues, composite)."""
+    _, visible = extract_think_block(response)
+    features = extract_falsifiability_features(visible)
     score = score_falsifiability(features)
 
     issues = []
+
+    if not visible:
+        issues.append("empty_visible_output")
+
+    fab_count = _count_fabricated_citations(response)
+    if fab_count > 0:
+        issues.append(f"fabricated_citations: {fab_count}")
 
     if score.specificity_score < 0.15:
         issues.append(f"low_specificity: {score.specificity_score:.2f}")
@@ -247,8 +283,8 @@ def quick_falsifiability_check(response: str) -> tuple[bool, list[str], float]:
     if features.prediction_density < 0.10 and features.sentence_count >= 3:
         issues.append(f"low_pred_density: {features.prediction_density:.2f}")
 
-    # Also check for banned phrases
-    lower = response.lower()
+    # Also check for banned phrases in visible response
+    lower = visible.lower()
     banned = [
         "it depends on context", "both sides have merit", "balanced approach",
         "context matters", "it ultimately depends", "optimal approach",
@@ -258,8 +294,8 @@ def quick_falsifiability_check(response: str) -> tuple[bool, list[str], float]:
         if phrase in lower:
             issues.append(f"banned: '{phrase}'")
 
-    # Word count
-    wc = len(response.split())
+    # Word count of visible answer
+    wc = len(visible.split())
     if wc < 80:
         issues.append(f"too_short: {wc}")
     if wc > 700:
@@ -399,6 +435,7 @@ def main():
             continue
 
         passed = len(best_issues) == 0
+        think_score = score_thinking_quality(best_response)
         trace = {
             "trace_id": trace_id,
             "question": seed["question"],
@@ -407,9 +444,11 @@ def main():
             "response": best_response,
             "generation_model": PROVIDERS[provider_key]["name"],
             "generated_at": int(time.time()),
-            "prompt_version": "falsifiable_v1",
+            "prompt_version": "falsifiable_thinking_v2",
             "word_count": len(best_response.split()),
             "falsifiability_composite": round(best_composite, 4),
+            "thinking_composite": think_score.composite,
+            "has_genuine_thinking": think_score.has_genuine_thinking,
             "quality_gate": "pass" if passed else "fail",
             "quality_issues": best_issues,
         }

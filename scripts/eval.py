@@ -32,6 +32,14 @@ from dialectic_dataset.falsifiability_extractor import (
     _count_fabricated_citations,
     _count_ungrounded_stats,
 )
+from dialectic_dataset.thinking_quality import (
+    extract_think_block,
+    score_thinking_quality,
+)
+from dialectic_dataset.verification_pipeline import (
+    DEFAULT_COUNCIL_HOST_IDS,
+    UnitaresConsultBackend,
+)
 
 EVAL_PROMPTS = TRADEOFF_EVAL_PROMPTS + RESISTANCE_EVAL_PROMPTS
 
@@ -115,9 +123,8 @@ def generate(model, tokenizer, question):
 
 
 def strip_think(text):
-    if "</think>" in text:
-        return text.split("</think>", 1)[1].strip()
-    return text.strip()
+    _, visible = extract_think_block(text)
+    return visible
 
 
 def parse_json(text):
@@ -180,6 +187,28 @@ def main():
     parser.add_argument("--adapter-path", required=True, help="Path to adapter directory")
     parser.add_argument("--output-dir", default=None, help="Output directory (default: data/eval/)")
     parser.add_argument("--label", default=None, help="Label for this eval run")
+    parser.add_argument(
+        "--judge",
+        choices=("mistral", "unitares_consult", "unitares_council", "none"),
+        default="mistral",
+        help="Judge backend for Stage 6 evaluation (default: mistral)",
+    )
+    parser.add_argument(
+        "--unitares-url",
+        default="http://127.0.0.1:8767",
+        help="UNITARES HTTP base URL when --judge is unitares_consult or unitares_council",
+    )
+    parser.add_argument(
+        "--host-id",
+        default="claude:host-adapter",
+        help="Host adapter when --judge=unitares_consult",
+    )
+    parser.add_argument(
+        "--host-ids",
+        nargs="+",
+        default=list(DEFAULT_COUNCIL_HOST_IDS),
+        help="Council host adapters when --judge=unitares_council",
+    )
     args = parser.parse_args()
 
     adapter_path = str(Path(args.adapter_path).resolve())
@@ -197,10 +226,11 @@ def main():
         logger.info(f"  {prompt['id']}")
         resp = generate(model, tokenizer, prompt["question"])
         answer = strip_think(resp)
+        think_score = score_thinking_quality(resp)
 
         features = extract_falsifiability_features(answer)
         fscore = score_falsifiability(features)
-        fab_count = _count_fabricated_citations(answer)
+        fab_count = _count_fabricated_citations(resp)
         ung_count = _count_ungrounded_stats(answer)
 
         responses.append({
@@ -210,6 +240,11 @@ def main():
             "response": resp,
             "answer_only": answer,
             "word_count": len(answer.split()),
+            "thinking_quality": {
+                "composite": think_score.composite,
+                "has_genuine_thinking": think_score.has_genuine_thinking,
+                "components": think_score.components,
+            },
             "falsifiability": {
                 "composite": round(fscore.composite, 4),
                 "grounding_penalty": round(fscore.components.get("grounding_penalty", 0), 4),
@@ -219,7 +254,9 @@ def main():
                 "ungrounded_stats": ung_count,
             },
         })
-        logger.info(f"    {len(answer.split())} words, fab_cite={fab_count}")
+        logger.info(
+            f"    {len(answer.split())} words, think={think_score.composite:.2f}, fab_cite={fab_count}"
+        )
 
     resp_path = output_dir / f"responses_{label}.json"
     with open(resp_path, "w") as f:
@@ -230,9 +267,46 @@ def main():
     if torch.backends.mps.is_available():
         torch.mps.empty_cache()
 
-    # Step 2: Mistral judge
-    if not api_key:
-        logger.warning("No MISTRAL_API_KEY — skipping judge scoring")
+    # Step 2: Judge scoring (Mistral or UNITARES consult/council)
+    if args.judge in ("unitares_consult", "unitares_council"):
+        logger.info(f"=== UNITARES {args.judge} Stage 6 verification & adversarial challenge ===")
+        backend = (
+            UnitaresConsultBackend(
+                base_url=args.unitares_url,
+                privacy="cloud_allowed",
+                host_id=args.host_id,
+            )
+            if args.judge == "unitares_consult"
+            else UnitaresConsultBackend(
+                base_url=args.unitares_url,
+                privacy="cloud_allowed",
+                host_ids=args.host_ids,
+            )
+        )
+        council_scored = []
+        for r in responses:
+            logger.info(f"  Evaluating via {args.judge}: {r['prompt_id']}")
+            report = backend.evaluate_trace(r["question"], r["response"])
+            council_scored.append({
+                "prompt_id": r["prompt_id"],
+                "category": r["category"],
+                "verification_pass": report.verification_pass,
+                "adversarial_survives": report.adversarial_survives,
+                "overall_pass": report.overall_pass,
+                "any_fabrication_detected": report.any_fabrication_detected,
+                "report": report.to_dict(),
+            })
+        rubric_path = output_dir / f"council_eval_{label}.json"
+        with open(rubric_path, "w") as f:
+            json.dump({"model": label, "judge": args.judge, "scores": council_scored}, f, indent=2)
+        pass_count = sum(1 for s in council_scored if s["overall_pass"])
+        print(f"\n{'='*60}\nEVAL ({args.judge}): {label}\n{'='*60}")
+        print(f"  Overall pass: {pass_count}/{len(council_scored)}")
+        print(f"  Results: {rubric_path}")
+        return
+
+    if args.judge == "none" or not api_key:
+        logger.warning("No MISTRAL_API_KEY (or --judge=none) — skipping Mistral judge scoring")
         return
 
     logger.info("=== Mistral-strict rubric scoring ===")

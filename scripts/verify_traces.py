@@ -116,6 +116,11 @@ def main() -> None:
         help="Council host adapter IDs when --mode=council",
     )
     parser.add_argument("--model", default=None, help="Optional model override for consult")
+    parser.add_argument(
+        "--client-session-id",
+        default=None,
+        help="UNITARES bound client_session_id (or set UNITARES_CLIENT_SESSION_ID env var)",
+    )
     parser.add_argument("--limit", type=int, default=0, help="Max traces to process (0 = all)")
     args = parser.parse_args()
 
@@ -126,6 +131,7 @@ def main() -> None:
             privacy=args.privacy,
             host_id=args.host_id if args.privacy == "cloud_allowed" else None,
             model=args.model,
+            client_session_id=args.client_session_id,
         )
     elif args.mode == "council":
         backend = UnitaresConsultBackend(
@@ -133,6 +139,7 @@ def main() -> None:
             privacy="cloud_allowed",
             host_ids=args.host_ids,
             model=args.model,
+            client_session_id=args.client_session_id,
         )
 
     in_path = Path(args.input)

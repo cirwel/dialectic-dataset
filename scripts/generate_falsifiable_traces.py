@@ -102,33 +102,24 @@ PROVIDERS = {
 
 FALSIFIABLE_PROMPT = """You are reasoning through a genuine tension.
 
-First, think through the problem inside <think>...</think> tags. In your <think> block, you MUST:
-- Notice your initial impulse and reconsider where it might be wrong ("Wait...", "Actually...", "Let me reconsider...")
-- Surface at least one hidden assumption in the question's framing ("That assumes that...", "The real tension is not X vs Y, but...")
-- Catch yourself if you are about to hedge or cite a statistic/study you cannot verify ("I shouldn't invent a study or hedge with 'it depends'...")
-- Reason through the concrete causal mechanism before writing your final response.
+Think through the problem first in natural, unscripted first-person prose (no numbered outlines, no bold rubric headers, and no commentary about "the prompt" or "constraints"). In your internal thinking, test your initial intuition against concrete failure modes, question any hidden assumption in the framing, and work out the underlying causal mechanism.
 
-After closing </think>, write your final response. Your visible response MUST contain:
-1. At least one claim with a specific mechanism, threshold, or condition (real numbers welcome but not required)
-2. At least one conditional that names the SPECIFIC variable — not "context" or "circumstances" but a measurable thing (team size, revenue, timeline, survival rate, etc.)
-3. At least one prediction that could be checked — something that would be wrong if your reasoning is wrong
+Carry the core insight from your thinking directly into your visible conclusion. Your visible response MUST contain:
+1. A specific causal mechanism and structural boundary condition (never invent arbitrary percentages or made-up millisecond/day thresholds when the boundary is architectural or structural)
+2. At least one conditional ("if/when ..., then ...") that names the SPECIFIC operational variable (e.g., whether actions mutate external state under concurrency, whether rollback is automated, whether errors compound across steps) — never "when context allows" or "in some cases"
+3. At least one checkable prediction that follows directly from your causal mechanism
 4. A clear position — not "both sides have merit" but "do X when Y, do Z when W"
 
 Your response MUST NOT contain:
 - "It depends" without specifying on WHAT with a concrete variable
 - "Both sides have merit", "balanced approach", "context matters", "it ultimately depends"
 - Labeled thesis/antithesis/synthesis, numbered lists, or pros/cons tables
-- Resolution phrases that could apply to any question
 - Fabricated studies, surveys, or reports (e.g. "a 2022 Harvard study found...")
-- Made-up statistics attributed to institutions or researchers
-
-Be specific through MECHANISMS and CONDITIONS, not through citations or statistics. "Teams above 8 people fragment into sub-groups that optimize locally" is good. "A 2022 Harvard study found 40% improvement" is bad unless you are certain that study exists. Do NOT invent studies, surveys, or statistics. If you cite a number, it must be one you are confident is real.
-
-Specificity comes from naming the concrete variables, thresholds, and failure modes — not from fabricating evidence.
+- Arbitrary invented numbers or thresholds (e.g. "500ms latency budget" or "15% over 7 days") that have no real causal basis
 
 Question: {question}
 
-Begin with <think>...</think> and then respond directly with no JSON or section labels."""
+Respond directly in prose with no JSON and no section labels."""
 
 
 # ---------------------------------------------------------------------------
@@ -150,14 +141,57 @@ def format_with_thinking(
     return text
 
 
-def _call_ollama_chat(model: str, prompt: str, keep_thinking: bool = True) -> str | None:
-    """Fallback to Ollama's native /api/chat for thinking models (e.g. Gemma 4)
-    that return empty content via the OpenAI-compatible endpoint.
-    Uses num_predict=4096 so thinking models have budget for both
-    reasoning and the actual response."""
+DELIBERATIVE_SYSTEM_PROMPT = (
+    "You reason through tensions by starting with a <think>...</think> block in natural "
+    "first-person prose (no numbered lists, no bold headings). In <think>, state your "
+    "initial instinct, then pause (\"Wait—\", \"Let me reconsider\") to uncover the hidden "
+    "assumption in the framing, remind yourself to avoid hedging or inventing arbitrary "
+    "numbers/statistics, and trace the concrete causal mechanism. After </think>, carry "
+    "that exact causal mechanism into a direct, committed resolution in prose (150-350 words) "
+    "with specific operational conditionals and checkable predictions."
+)
+
+DELIBERATIVE_EXEMPLAR_USER = "Should startups optimize for speed of iteration or code quality?"
+DELIBERATIVE_EXEMPLAR_ASSISTANT = (
+    "<think>\n"
+    "At first glance, startups should optimize for speed because shipping faster means "
+    "learning faster, whereas code quality seems like a luxury for mature companies. "
+    "Wait—that assumes that technical debt accrues uniformly across the codebase. Let me "
+    "reconsider what actually kills iteration speed in a six-month-old startup. Instead of "
+    "hedging or inventing a fake industry statistic, let me trace the mechanism: if the "
+    "data model or auth boundary is a mess, every new feature requires untangling broken "
+    "state, so deployment velocity drops to zero. Actually, the real tension is not speed "
+    "versus quality across the whole stack; it is boundary stability versus interior "
+    "disposable code. Because API contracts and database schemas have high blast radius "
+    "when changed, cutting corners there causes cascading rework, whereas UI and workflow "
+    "experiments are cheap to rewrite once product-market fit is validated.\n"
+    "</think>\n\n"
+    "Optimize for architectural quality at irreversible boundaries—data models, "
+    "authentication, and core API contracts—while optimizing for raw iteration speed in "
+    "interior product workflows and UI. If a startup has fewer than 10 engineers and has "
+    "not yet reached product-market fit, spending weeks polishing interior UI components "
+    "wastes runway because those features will likely be discarded within 3 months. "
+    "However, if the team cuts corners on database schema constraints or state boundaries, "
+    "feature velocity will collapse within 60 days as engineers spend more than half their "
+    "sprint untangling data corruption. Enforce strict review and automated tests on schema "
+    "and API boundaries from day one, and allow rapid, unpolished experimentation everywhere else."
+)
+
+
+def _call_ollama_chat(model: str, question: str, keep_thinking: bool = True) -> str | None:
+    """Call Ollama's native /api/chat with think=False and a 1-shot conversational
+    <think> exemplar so models like Gemma 4 emit natural first-person <think> prose
+    rather than canned numbered outline templates."""
+    messages = [
+        {"role": "system", "content": DELIBERATIVE_SYSTEM_PROMPT},
+        {"role": "user", "content": DELIBERATIVE_EXEMPLAR_USER},
+        {"role": "assistant", "content": DELIBERATIVE_EXEMPLAR_ASSISTANT},
+        {"role": "user", "content": FALSIFIABLE_PROMPT.format(question=question)},
+    ]
     body = {
         "model": model,
-        "messages": [{"role": "user", "content": prompt}],
+        "think": False,
+        "messages": messages,
         "stream": False,
         "options": {"temperature": 0.7, "num_predict": 4096},
     }
@@ -166,7 +200,7 @@ def _call_ollama_chat(model: str, prompt: str, keep_thinking: bool = True) -> st
         resp.raise_for_status()
         msg = resp.json().get("message", {})
         text = msg.get("content", "")
-        thinking = msg.get("thinking") or msg.get("reasoning_content")
+        thinking = msg.get("reasoning") or msg.get("thinking") or msg.get("reasoning_content")
         combined = format_with_thinking(text, thinking=thinking, keep_thinking=keep_thinking)
         return combined if combined else None
     except Exception as e:
@@ -178,8 +212,11 @@ def call_provider(provider_key: str, question: str, keep_thinking: bool = True) 
     """Call a provider and return response text (preserving <think> blocks by default)."""
     cfg = PROVIDERS[provider_key]
     is_ollama = cfg["env_key"] == "_OLLAMA"
-    api_key = None if is_ollama else os.environ.get(cfg["env_key"])
-    if not api_key and not is_ollama:
+    if is_ollama:
+        return _call_ollama_chat(cfg["model"], question, keep_thinking=keep_thinking)
+
+    api_key = os.environ.get(cfg["env_key"])
+    if not api_key:
         logger.warning(f"  No API key for {cfg['env_key']}, skipping {cfg['name']}")
         return None
 
@@ -196,7 +233,7 @@ def call_provider(provider_key: str, question: str, keep_thinking: bool = True) 
         "model": cfg["model"],
         "messages": [{"role": "user", "content": prompt}],
         "temperature": 0.7,
-        "max_tokens": 1536,
+        "max_tokens": 4096,
     }
 
     for attempt in range(3):
@@ -217,7 +254,7 @@ def call_provider(provider_key: str, question: str, keep_thinking: bool = True) 
             data = resp.json()
             msg = data["choices"][0]["message"]
             text = msg.get("content", "")
-            thinking = msg.get("thinking") or msg.get("reasoning_content")
+            thinking = msg.get("reasoning") or msg.get("thinking") or msg.get("reasoning_content")
             if not text and is_ollama:
                 logger.info(f"  Empty via OpenAI endpoint, trying native chat API")
                 text = _call_ollama_chat(cfg["model"], prompt, keep_thinking=keep_thinking)
@@ -272,6 +309,10 @@ def quick_falsifiability_check(response: str) -> tuple[bool, list[str], float]:
     fab_count = _count_fabricated_citations(response)
     if fab_count > 0:
         issues.append(f"fabricated_citations: {fab_count}")
+
+    think_score = score_thinking_quality(response)
+    if think_score.features.meta_echo_count > 0:
+        issues.append(f"meta_rubric_echo_in_thinking: {think_score.features.meta_echo_count}")
 
     if score.specificity_score < 0.15:
         issues.append(f"low_specificity: {score.specificity_score:.2f}")
@@ -345,7 +386,12 @@ def main():
                         help="Max retries per seed if quality gate fails")
     parser.add_argument("--seeds-file", type=str, default=None,
                         help="Path to seeds JSON (default: seeds_axiom.json)")
+    parser.add_argument("--output", type=str, default=None,
+                        help="Output JSONL path (default: data/traces_v8.jsonl)")
     args = parser.parse_args()
+
+    out_path = Path(args.output) if args.output else OUTPUT_PATH
+    out_path.parent.mkdir(parents=True, exist_ok=True)
 
     # Load seeds
     seeds_path = Path(args.seeds_file) if args.seeds_file else SEEDS_PATH
@@ -382,8 +428,8 @@ def main():
 
     # Resume support
     done_ids = set()
-    if args.resume and OUTPUT_PATH.exists():
-        with open(OUTPUT_PATH) as f:
+    if args.resume and out_path.exists():
+        with open(out_path) as f:
             for line in f:
                 t = json.loads(line)
                 if t.get("quality_gate") == "pass":
@@ -454,7 +500,7 @@ def main():
         }
 
         traces.append(trace)
-        with open(OUTPUT_PATH, "a") as f:
+        with open(out_path, "a") as f:
             f.write(json.dumps(trace) + "\n")
 
         logger.info(f"  Saved: gate={'pass' if passed else 'fail'}, composite={best_composite:.3f}")
@@ -473,7 +519,7 @@ def main():
     print(f"  Quality pass:  {passed_count}")
     print(f"  Quality fail:  {failed_count}")
     print(f"  API failures:  {len(failures)}")
-    print(f"  Output:        {OUTPUT_PATH}")
+    print(f"  Output:        {out_path}")
 
     if traces:
         composites = [t["falsifiability_composite"] for t in traces]

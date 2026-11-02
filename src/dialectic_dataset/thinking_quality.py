@@ -39,6 +39,7 @@ DIRECTION_CHANGE_PATTERNS: Tuple[re.Pattern[str], ...] = tuple(
         r"\blet me reconsider\b",
         r"\bscratch that\b",
         r"\bi initially thought\b",
+        r"\bmy initial instinct\b",
         r"\bat first glance\b.*\bbut\b",
         r"\bif that were true\b",
         r"\bno[,\s]+that misses\b",
@@ -58,6 +59,8 @@ ASSUMPTION_SURFACING_PATTERNS: Tuple[re.Pattern[str], ...] = tuple(
         r"\bwhat if we drop\b",
         r"\bimplicit(?:ly)?\s+assum",
         r"\bpresupposes?\b",
+        r"\boversimplif(?:y|ies|ying)\b",
+        r"\bconflat(?:e|es|ing)\b",
     )
 )
 
@@ -73,6 +76,8 @@ SELF_CORRECTION_PATTERNS: Tuple[re.Pattern[str], ...] = tuple(
         r"\bi was about to\b",
         r"\bwithout\s+(?:making up|fabricating|inventing)\b",
         r"\b(?:trap here is|selection trap|goodhart)\b",
+        r"\bi(?:'m| am)\s+(?:oversimplifying|missing|conflating|ignoring)\b",
+        r"\bfailure mode\b",
     )
 )
 
@@ -83,7 +88,10 @@ REFRAMING_PATTERNS: Tuple[re.Pattern[str], ...] = tuple(
         r"\bwrong question\b",
         r"\brefram(?:e|ing)\b",
         r"\breal tension is\b",
+        r"\breal question is\b",
         r"\bnot\s+\w+\s+vs\.?\s+\w+[,\s]+but\b",
+        r"\bisn't\s+just\b.*\bit(?:'s| is)\s+(?:about|how|which)\b",
+        r"\bnot\s+an?\s+['\"]?either/or['\"]?\b",
         r"\bunderneath both\b",
         r"\bbinary framing\b",
         r"\bwhat(?:'s| is)\s+(?:actually at stake|the concrete)\b",
@@ -97,6 +105,20 @@ _MECHANISM_RE = re.compile(
     r"feedback loop|trade-?off|leads?\s+to|results?\s+in|causes?|prevents?|"
     r"couples?|drives?|if\s+and\s+only\s+if|when\s+.*\bthen\b)\b",
     re.IGNORECASE,
+)
+
+META_RUBRIC_ECHO_PATTERNS: Tuple[re.Pattern[str], ...] = tuple(
+    re.compile(p, re.IGNORECASE | re.MULTILINE)
+    for p in (
+        r"\bthinking process designed to\b",
+        r"\bmeet all constraints\b",
+        r"\breconsideration/self-correction\b",
+        r"\banalyze the core tension\b",
+        r"\binitial impulse\s*\(",
+        r"^\s*\d+\.\s+\*\*[A-Z]",
+        r"\bthe prompt asks\b",
+        r"\bthe user wants\b",
+    )
 )
 
 MIN_GENUINE_THINK_WORDS = 30
@@ -120,6 +142,7 @@ class ThinkingFeatures:
     mechanism_count: int
     mechanism_density: float
     think_to_output_divergence: float
+    meta_echo_count: int = 0
 
 
 @dataclass
@@ -195,6 +218,7 @@ def extract_thinking_features(response: str) -> ThinkingFeatures:
     assumptions = _count_pattern_hits(think_text, ASSUMPTION_SURFACING_PATTERNS)
     corrections = _count_pattern_hits(think_text, SELF_CORRECTION_PATTERNS)
     reframes = _count_pattern_hits(think_text, REFRAMING_PATTERNS)
+    meta_echoes = _count_pattern_hits(think_text, META_RUBRIC_ECHO_PATTERNS)
     mechanisms = len(_MECHANISM_RE.findall(think_text))
     mech_density = mechanisms / max(1, sc)
 
@@ -218,6 +242,7 @@ def extract_thinking_features(response: str) -> ThinkingFeatures:
         mechanism_count=mechanisms,
         mechanism_density=mech_density,
         think_to_output_divergence=divergence,
+        meta_echo_count=meta_echoes,
     )
 
 
@@ -276,6 +301,8 @@ def score_thinking_quality(response_or_features: str | ThinkingFeatures) -> Thin
     )
     if deliberative_signals > 0 and features.mechanism_count == 0:
         formulaic_penalty += 0.25
+    if features.meta_echo_count > 0:
+        formulaic_penalty += min(0.60, 0.25 * features.meta_echo_count)
 
     raw_composite = (
         0.22 * direction_score
@@ -291,6 +318,7 @@ def score_thinking_quality(response_or_features: str | ThinkingFeatures) -> Thin
         features.think_word_count >= MIN_GENUINE_THINK_WORDS
         and deliberative_signals >= 2
         and features.mechanism_count >= 1
+        and features.meta_echo_count == 0
         and features.think_to_output_divergence < 1.0
         and composite >= 0.45
     )

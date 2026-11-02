@@ -30,12 +30,36 @@ from verify_traces import enrich_trace_record  # noqa: E402
 
 class TestStage2VerificationParsing:
     def test_prompts_contain_four_questions_and_schema(self):
-        prompt = build_verification_prompt("Should we shard early?", "Wait until write contention.")
+        prompt = build_verification_prompt(
+            "Should we shard early?",
+            "<think>Wait, let me reconsider.</think>\nWait until write contention.",
+        )
         assert "confident_real" in prompt
         assert "generated_or_uncertain" in prompt
-        assert "resolves_tension" in prompt
-        assert "has_non_obvious_pivot" in prompt
-        assert "is_topic_specific" in prompt
+        assert "RESOLVES_TENSION" in prompt
+        assert "HAS_NON_OBVIOUS_PIVOT" in prompt
+        assert "IS_TOPIC_SPECIFIC" in prompt
+        assert "[DRAFT NOTES]" in prompt
+        assert "<think>" not in prompt
+
+    def test_parses_structured_kv_verification_from_claude_adapter(self):
+        raw = (
+            "Advisory critique:\n"
+            "1. The 500 ms threshold is unsupported.\n\n"
+            "FABRICATED_OR_UNCERTAIN_CLAIMS: a 500 ms latency budget is the threshold for ACID; summarization reduces variance\n"
+            "CONFIDENT_REAL_CLAIMS: ACID guarantees transactional state updates\n"
+            "RESOLVES_TENSION: false\n"
+            "HAS_NON_OBVIOUS_PIVOT: true\n"
+            "IS_TOPIC_SPECIFIC: true\n"
+            "SUMMARY: Strong pivot in notes, but conclusion invents a 500 ms threshold."
+        )
+        res = parse_verification_response(raw, reviewer_id="claude:host-adapter")
+        assert res.fabricated_claims_count == 2
+        assert len(res.claims) == 3
+        assert not res.resolves_tension
+        assert res.has_non_obvious_pivot
+        assert res.is_topic_specific
+        assert not res.passed
 
     def test_parses_clean_json_verification(self):
         payload = {

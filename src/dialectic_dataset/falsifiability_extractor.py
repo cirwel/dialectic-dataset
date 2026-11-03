@@ -82,7 +82,7 @@ _CAUSAL_RE = re.compile(
     re.IGNORECASE,
 )
 _MECHANISM_CONSEQUENCE_RE = re.compile(
-    r'\b(?:then\b|must\s+(?:halt|fail|enforce|constrain|prioritize|cease|suspend)|'
+    r'\b(?:must\s+(?:halt|fail|enforce|constrain|prioritize|cease|suspend)|'
     r'will\s+(?:fail|halt|exhibit|proceed|decrease|increase|diverge|cascade)|'
     r'checkable\s+prediction|testable\s+prediction|fails?\s+when|'
     r'breaks?\s+down\s+when|safer\s+because|dangerous\s+when)\b',

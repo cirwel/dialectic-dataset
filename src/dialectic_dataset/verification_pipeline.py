@@ -699,11 +699,19 @@ class UnitaresConsultBackend:
             parse_verification_response(text, reviewer_id=rev)
             for rev, text in pairs
         ]
-        # Check if the response also included Stage 3 adversarial fields
-        has_adv_fields = any(
-            "SURVIVES_CHALLENGE" in text.upper() or "survives_challenge" in text
-            for _, text in pairs
-        )
+        # Check if the response also included structured Stage 3 adversarial fields
+        has_adv_fields = False
+        for _, text in pairs:
+            parsed_json = _extract_json_object(text)
+            if parsed_json and any(
+                k in parsed_json for k in ("survives_challenge", "weakest_point", "strongest_counterargument")
+            ):
+                has_adv_fields = True
+                break
+            kv = _extract_kv_map(text)
+            if any(k in kv for k in ("SURVIVES_CHALLENGE", "WEAKEST_POINT", "STRONGEST_COUNTERARGUMENT")):
+                has_adv_fields = True
+                break
         if has_adv_fields:
             challenges = [
                 parse_adversarial_response(text, reviewer_id=rev)

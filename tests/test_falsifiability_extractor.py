@@ -77,6 +77,20 @@ class TestExtractConditionals:
         )
         assert f.total_conditionals == 0
 
+    def test_mechanistic_conditional_without_numbers_is_specific(self):
+        f = extract_falsifiability_features(
+            "If the agent's operational loop mutates external state, then the "
+            "system must enforce a transactional rollback boundary because "
+            "partial failures corrupt ground truth."
+        )
+        assert f.total_conditionals == 1
+        assert f.specific_conditionals == 1
+        assert f.vague_conditionals == 0
+        assert f.falsifiable_sentence_count == 1
+        score = score_falsifiability(f)
+        assert score.tier1_pass
+        assert score.composite >= 0.45
+
 
 class TestCommitmentVsHedging:
     def test_high_commitment(self):

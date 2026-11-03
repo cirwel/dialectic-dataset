@@ -246,6 +246,46 @@ class TestUnitaresConsultBackend:
         assert calls[0][1]["arguments"]["host_ids"] == ["claude:host-adapter", "codex:host-adapter"]
         assert report.overall_pass
 
+    def test_single_combined_consult_call_extracts_both_stages(self):
+        calls = []
+
+        def fake_transport(url, payload, timeout):
+            calls.append((url, payload))
+            return {
+                "result": {
+                    "members": [
+                        {
+                            "host_id": "codex:host-adapter",
+                            "advice": (
+                                "FABRICATED_OR_UNCERTAIN_CLAIMS: none\n"
+                                "CONFIDENT_REAL_CLAIMS: none\n"
+                                "RESOLVES_TENSION: true\n"
+                                "HAS_NON_OBVIOUS_PIVOT: true\n"
+                                "IS_TOPIC_SPECIFIC: true\n"
+                                "SUMMARY: Solid mechanistic resolution.\n"
+                                "WEAKEST_POINT: Minor edge case.\n"
+                                "STRONGEST_COUNTERARGUMENT: Stateless fallback.\n"
+                                "UNEXAMINED_ASSUMPTION: Network reliability.\n"
+                                "SURVIVES_CHALLENGE: true\n"
+                                "SURVIVAL_RATIONALE: Core boundary holds."
+                            ),
+                        }
+                    ]
+                }
+            }
+
+        backend = UnitaresConsultBackend(
+            base_url="http://127.0.0.1:8767",
+            privacy="cloud_allowed",
+            host_ids=["codex:host-adapter"],
+            transport=fake_transport,
+        )
+        report = backend.evaluate_trace("Question?", "<think>Wait, let me reconsider</think>Answer.")
+        assert len(calls) == 1
+        assert report.verification_pass
+        assert report.adversarial_survives
+        assert report.overall_pass
+
 
 class TestStage5BuildTrainingIntegration:
     def test_keep_thinking_is_default(self):

@@ -76,7 +76,16 @@ _COMPARISON_RE = re.compile(
 )
 _CAUSAL_RE = re.compile(
     r'\b(?:because|causes?|leads?\s+to|results?\s+in|produces?|creates?|'
-    r'generates?|triggers?|prevents?|enables?|drives?)\b',
+    r'generates?|triggers?|prevents?|enables?|drives?|mechanisms?|'
+    r'invariant|boundary\s+condition|failure\s+mode|state\s+transition|'
+    r'rollback|cascade|diverges?|halts?|mutates?|corrupts?)\b',
+    re.IGNORECASE,
+)
+_MECHANISM_CONSEQUENCE_RE = re.compile(
+    r'\b(?:must\s+(?:halt|fail|enforce|constrain|prioritize|cease|suspend)|'
+    r'will\s+(?:fail|halt|exhibit|proceed|decrease|increase|diverge|cascade)|'
+    r'checkable\s+prediction|testable\s+prediction|fails?\s+when|'
+    r'breaks?\s+down\s+when|safer\s+because|dangerous\s+when)\b',
     re.IGNORECASE,
 )
 _TEMPORAL_RE = re.compile(
@@ -248,13 +257,22 @@ def _extract_conditional_clauses(text: str) -> List[Tuple[str, bool]]:
             results.append((sent, False))  # not specific
             continue
 
-        # Check for specificity markers: numbers, entities, comparisons
+        # Check for specificity markers: numbers, entities, comparisons, causal/mechanistic consequences
         has_number = bool(_NUMBER_RE.search(sent))
         has_entity = bool(_MID_SENTENCE_CAP_RE.search(sent))
         has_comparison = bool(_COMPARISON_RE.search(sent))
         has_temporal = bool(_TEMPORAL_RE.search(sent))
+        has_causal = bool(_CAUSAL_RE.search(sent))
+        has_consequence = bool(_MECHANISM_CONSEQUENCE_RE.search(sent))
 
-        is_specific = has_number or has_entity or has_comparison or has_temporal
+        is_specific = (
+            has_number
+            or has_entity
+            or has_comparison
+            or has_temporal
+            or has_causal
+            or has_consequence
+        )
         results.append((sent, is_specific))
 
     return results
@@ -290,7 +308,11 @@ def _is_falsifiable_sentence(sent: str) -> bool:
     - A causal claim ("because X, Y")
     - A temporal claim ("within N months")
     - A named entity with a verb
+    - A non-vague conditional ("If X, then Y")
+    - A mechanistic consequence or testable prediction marker
     """
+    lower = sent.lower()
+    is_vague = any(vp in lower for vp in VAGUE_CONDITIONAL_PHRASES)
     signals = 0
     if _NUMBER_RE.search(sent):
         signals += 1
@@ -301,6 +323,10 @@ def _is_falsifiable_sentence(sent: str) -> bool:
     if _TEMPORAL_RE.search(sent):
         signals += 1
     if _MID_SENTENCE_CAP_RE.search(sent):
+        signals += 1
+    if not is_vague and _CONDITIONAL_START_RE.search(sent):
+        signals += 1
+    if not is_vague and _MECHANISM_CONSEQUENCE_RE.search(sent):
         signals += 1
     return signals >= 2
 

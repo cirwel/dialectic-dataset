@@ -1,0 +1,150 @@
+{
+  "version": "1.0",
+  "description": "Curated gold-standard deliberative <think> + resolution calibration set (6 positive genuine deliberative traces, 6 negative failure-mode traces) for Stage 4 thinking quality and Stage 2/5 fabrication & selection gates.",
+  "samples": [
+    {
+      "sample_id": "think_good_01",
+      "domain": "software_architecture",
+      "question": "Should fast-moving engineering teams enforce mandatory synchronous code review before every deployment?",
+      "response": "<think>\nAt first glance, mandatory synchronous code review seems essential to prevent defects from reaching production, while skipping review maximizes deployment speed. Wait, that assumes that human code review is the primary mechanism for catching production-breaking bugs, and that review latency scales linearly. Let me reconsider. Actually, the underlying assumption in the 'review everything synchronously' position is that reviewers catch runtime state interactions, when in practice human reviewers mostly catch local style or obvious logic errors while missing distributed state bugs. Instead of hedging or saying 'balance speed and quality', and without making up a fake industry statistic, what's actually at stake here? The real tension is not speed vs quality, but pre-merge human inspection vs post-merge automated fault isolation. Because synchronous review couples deployment cadence to reviewer context-switching latency, it causes PR sizes to balloon when reviewers are busy, which in turn increases defect density per deploy. Therefore, when rollback time is under 2 minutes and canary telemetry is automated, synchronous human review is only load-bearing for irreversible changes (database migrations, auth boundaries, public contracts).\n</think>\n\nMandatory synchronous pre-merge review should be scoped strictly to irreversible boundaries—schema migrations, authentication/authorization logic, and public API contracts—rather than applied uniformly to all commits. When a team's automated canary rollback takes less than 5 minutes, enforcing synchronous human review on routine application diffs increases batch size because engineers bundle changes while waiting for reviewer availability, which raises the blast radius of each deployment. Conversely, if a system lacks automated rollback or deploys stateful schema changes that cannot be reversed without data loss, synchronous review by a domain owner before merge is mandatory because post-deploy recovery costs exceed review queueing latency.",
+      "expected": {
+        "has_genuine_thinking": true,
+        "min_thinking_composite": 0.65,
+        "fabricated_citations": 0,
+        "should_pass_training_gate": true
+      }
+    },
+    {
+      "sample_id": "think_good_02",
+      "domain": "distributed_systems",
+      "question": "When building a multi-tenant SaaS platform, should you isolate tenants at the database instance level or share tables with a tenant_id column?",
+      "response": "<think>\nI initially thought shared tables with a tenant_id column are always better for startups and database-per-tenant is for enterprise. Hold on—that's a surface rule of thumb, not a causal mechanism. What hidden assumption is buried in 'startups should use shared tables'? It assumes that operational migration overhead is harder to automate than noisy-neighbor query contention and row-level security bugs. Scratch that—let me look at the actual failure modes. I shouldn't cite an unverifiable breach percentage, so let's reason from database mechanics: in a shared B-tree index, a single tenant with 100x the row volume of others skews query planner statistics and buffer pool eviction, causing latency spikes for all tenants. On the other hand, provisioning 5,000 separate Postgres instances creates connection-pooling and schema-migration bottlenecks. So the false dichotomy is 'shared table vs separate instance'. The deeper issue is the ratio of tenant size variance to schema change frequency.\n</think>\n\nUse shared tables with row-level security when tenant data volumes stay within two orders of magnitude of each other and schema migrations run multiple times per week; switch to isolated schemas or instances for any tenant whose row count or IOPS exceeds 10% of cluster capacity. In a shared B-tree index, a single large tenant skews query planner histograms and monopolizes the buffer pool, causing tail-latency spikes for smaller tenants regardless of application-level rate limiting. However, isolating every small tenant into its own database instance above roughly 500 tenants causes schema migration locks and connection pool overhead to dominate operational time. The architecture should therefore default to pooled tables for the long tail while supporting automated shard promotion to dedicated instances once a tenant crosses a concrete throughput or compliance threshold.",
+      "expected": {
+        "has_genuine_thinking": true,
+        "min_thinking_composite": 0.65,
+        "fabricated_citations": 0,
+        "should_pass_training_gate": true
+      }
+    },
+    {
+      "sample_id": "think_good_03",
+      "domain": "security_engineering",
+      "question": "Should organizations force employees to rotate passwords every 90 days?",
+      "response": "<think>\nAt first glance, rotating passwords every 90 days limits the time window an attacker can use a stolen credential, while not rotating leaves compromised passwords active indefinitely. Wait, that assumes that forced rotation produces independent, high-entropy passwords each cycle. Let me reconsider what human users actually do under a 90-day constraint. Instead of splitting the difference and recommending 180 days, and without fabricating a study citation, let's trace the incentive mechanism: when users are forced to invent a new secret every quarter, they apply predictable transformations (incrementing a season or digit) that password-cracking rulesets invert in milliseconds, and they avoid password managers when rotation workflows break autofill. The real tension is not frequent rotation vs never rotating, but time-based expiration vs compromise-triggered rotation backed by phishing-resistant MFA.\n</think>\n\nOrganizations should abolish periodic time-based password rotation and instead enforce rotation only when concrete compromise signals fire—such as credential stuffing alerts, breach-corpus matches, or anomalous session telemetry—paired with phishing-resistant MFA. Time-based 90-day rotation degrades security because human users respond to frequent mandatory resets by choosing predictable incremental patterns rather than independent high-entropy secrets, while IT teams mistake calendar compliance for credential hygiene. If an environment cannot deploy MFA on legacy protocols, lengthen the minimum password length to 16+ characters and screen against known-breach hashes at creation time rather than forcing periodic resets.",
+      "expected": {
+        "has_genuine_thinking": true,
+        "min_thinking_composite": 0.65,
+        "fabricated_citations": 0,
+        "should_pass_training_gate": true
+      }
+    },
+    {
+      "sample_id": "think_good_04",
+      "domain": "organizational_design",
+      "question": "Should platform engineering teams mandate use of their internal developer platform or compete for internal adoption?",
+      "response": "<think>\nWait—if a platform team mandates adoption, product teams complain about being blocked by an inflexible monopoly; if adoption is purely optional, every product team fragments into maintaining its own bespoke CI/CD and observability stack. Actually, that binary framing presupposes that 'the platform' is a single monolithic product. Let me reconsider what happens when a platform team has no mandate vs a blanket mandate. I must avoid hedging with 'it depends on company culture' and instead identify the structural mechanism: a blanket mandate removes the feedback loop that exposes bad platform ergonomics, because captive users cannot walk away, whereas optional adoption on security/compliance invariants forces every product team to duplicate undifferentiated auditing work. Therefore, the distinction is between governance invariants (which must be mandatory contracts) and developer workflows (which must earn adoption by being faster than DIY).\n</think>\n\nMandate the Thin Governance Contract—identity, audit logging, secret injection, and network egress boundaries—while requiring the platform team's higher-level workflow abstractions to earn voluntary adoption by outperforming bespoke team setups. When a platform team is granted a blanket monopoly over developer tooling, the absence of an exit option severs the feedback loop that penalizes slow or brittle abstractions, causing platform velocity to stagnate. Conversely, making security and telemetry contracts optional forces every product team to duplicate compliance engineering. If fewer than 70% of product teams voluntarily choose the paved-road deployment template within 6 months of availability, treat that as a product defect in the platform's ergonomics rather than a compliance failure by application teams.",
+      "expected": {
+        "has_genuine_thinking": true,
+        "min_thinking_composite": 0.65,
+        "fabricated_citations": 0,
+        "should_pass_training_gate": true
+      }
+    },
+    {
+      "sample_id": "think_good_05",
+      "domain": "economics_and_pricing",
+      "question": "Should an infrastructure API company charge purely usage-based pricing or flat committed tiers?",
+      "response": "<think>\nAt first glance, usage-based pricing aligns cost with value for developers, while committed tiers give enterprise CFOs budget predictability. Hold on, that's just listing both sides. Why do pure usage-based models trigger churn right when a customer succeeds? Because when a customer's traffic spikes 10x—sometimes from a runaway retry loop or DDoS rather than revenue-generating users—uncapped usage billing turns an operational incident into a financial shock. Let me reconsider the underlying assumption: both sides assume unit resource cost and marginal customer value scale at the same functional form. Instead of hedging, and without inventing a SaaS benchmark survey, let's trace the mechanism: compute/bandwidth cost scales sub-linearly with volume due to reserved capacity, while enterprise procurement requires a bounded ceiling. The real tension is solved by separating burst protection from unit rate commitment.\n</think>\n\nUse usage-based billing with automated spend circuit-breakers for self-serve acquisition, and transition accounts to committed capacity tiers with burst rollover once monthly spend exceeds the threshold where procurement review is triggered (typically $2,000–$5,000/month). Pure uncapped usage pricing penalizes customers during traffic spikes or retry storms, converting engineering incidents into billing disputes that drive high-volume customers to build in-house alternatives. Conversely, requiring upfront flat tiers at signup blocks bottom-up developer adoption before workload size is known. By guaranteeing that unexpected burst spikes above 2x baseline are either rate-limited or billed at marginal infrastructure cost rather than punitive overage rates, you preserve both zero-friction onboarding and enterprise budget predictability.",
+      "expected": {
+        "has_genuine_thinking": true,
+        "min_thinking_composite": 0.65,
+        "fabricated_citations": 0,
+        "should_pass_training_gate": true
+      }
+    },
+    {
+      "sample_id": "think_good_06",
+      "domain": "ml_governance",
+      "question": "When fine-tuning a reasoning model on synthetic traces, should you select training examples using best-of-N on output specificity scores?",
+      "response": "<think>\nI initially thought best-of-N on a deterministic specificity/falsifiability score is the cleanest way to filter synthetic training data without paying for human annotation. Wait—what happens when a generator produces 8 candidates and we pick the highest specificity score? The specificity scorer counts numbers, named entities, and commitment phrases. Actually, that creates a Goodhart selection trap: a candidate that hallucinates an unverifiable institutional study with invented sample sizes and percentages will outscore a genuinely reasoned candidate that explains the causal mechanism without invented statistics! Let me reconsider. Taking for granted that surface specificity equals truthfulness is the exact failure mode. Instead of saying 'combine automated scores with human review', what is the concrete pipeline mechanism? We must first run an explicit fabrication veto across both <think> and visible output, and weight deliberative <think> quality (self-correction, assumption surfacing) ahead of raw output token counts.\n</think>\n\nNever rank best-of-N synthetic candidates by output specificity or number density alone; apply a hard fabrication veto first and rank surviving candidates primarily by the deliberative quality of their `<think>` trace. Because surface specificity scorers reward concrete numbers and named entities, best-of-N selection systematically amplifies hallucinated citations and fabricated statistics whenever the generator's sampling temperature is greater than zero. To prevent GIGO amplification, any candidate containing unverifiable citations in either its `<think>` block or visible answer must be rejected before ranking, and selection among passing traces must weight genuine direction changes, assumption surfacing, and causal mechanisms in `<think>` above surface output metrics.",
+      "expected": {
+        "has_genuine_thinking": true,
+        "min_thinking_composite": 0.65,
+        "fabricated_citations": 0,
+        "should_pass_training_gate": true
+      }
+    },
+    {
+      "sample_id": "think_bad_01_empty_tag",
+      "domain": "software_architecture",
+      "question": "Should fast-moving engineering teams enforce mandatory synchronous code review before every deployment?",
+      "response": "<think></think>\n\nIf the team has fewer than 10 engineers, skip synchronous review for routine changes; above 50 engineers, require review on critical paths.",
+      "expected": {
+        "has_genuine_thinking": false,
+        "max_thinking_composite": 0.05,
+        "fabricated_citations": 0,
+        "should_pass_training_gate": false
+      }
+    },
+    {
+      "sample_id": "think_bad_02_stub_formulaic",
+      "domain": "distributed_systems",
+      "question": "When building a multi-tenant SaaS platform, should you isolate tenants at the database instance level or share tables with a tenant_id column?",
+      "response": "<think>Let me weigh both sides carefully and provide a balanced, nuanced synthesis of shared tables versus isolated instances.</think>\n\nBoth approaches have merit depending on context and organizational maturity.",
+      "expected": {
+        "has_genuine_thinking": false,
+        "max_thinking_composite": 0.25,
+        "fabricated_citations": 0,
+        "should_pass_training_gate": false
+      }
+    },
+    {
+      "sample_id": "think_bad_03_fabricated_in_think",
+      "domain": "security_engineering",
+      "question": "Should organizations force employees to rotate passwords every 90 days?",
+      "response": "<think>\nWait, let me reconsider. According to a 2022 Harvard study of 500 enterprises, forced 90-day rotation increased breach rates by 42% because users pick weaker passwords.\n</think>\n\nOrganizations should only rotate passwords upon suspected compromise rather than every 90 days.",
+      "expected": {
+        "has_genuine_thinking": false,
+        "max_thinking_composite": 1.0,
+        "fabricated_citations": 1,
+        "should_pass_training_gate": false
+      }
+    },
+    {
+      "sample_id": "think_bad_04_fabricated_in_answer",
+      "domain": "organizational_design",
+      "question": "Should platform engineering teams mandate use of their internal developer platform or compete for internal adoption?",
+      "response": "<think>\nWait, let me reconsider the hidden assumption here because mandatory platforms remove feedback loops.\n</think>\n\nA 2023 Stanford report showed that mandatory platforms reduce deployment velocity by 35% across 200 surveyed firms.",
+      "expected": {
+        "has_genuine_thinking": false,
+        "max_thinking_composite": 1.0,
+        "fabricated_citations": 1,
+        "should_pass_training_gate": false
+      }
+    },
+    {
+      "sample_id": "think_bad_05_unclosed_think",
+      "domain": "economics_and_pricing",
+      "question": "Should an infrastructure API company charge purely usage-based pricing or flat committed tiers?",
+      "response": "<think>\nWait, let me reconsider the underlying assumption that usage-based pricing aligns incentives because traffic spikes cause unpredictable bills and...",
+      "expected": {
+        "has_genuine_thinking": false,
+        "max_thinking_composite": 1.0,
+        "fabricated_citations": 0,
+        "should_pass_training_gate": false
+      }
+    },
+    {
+      "sample_id": "think_bad_06_no_think_tag",
+      "domain": "ml_governance",
+      "question": "When fine-tuning a reasoning model on synthetic traces, should you select training examples using best-of-N on output specificity scores?",
+      "response": "You should combine automated specificity scores with verification passes so that fabricated outputs are filtered out.",
+      "expected": {
+        "has_genuine_thinking": false,
+        "max_thinking_composite": 0.0,
+        "fabricated_citations": 0,
+        "should_pass_training_gate": false
+      }
+    }
+  ]
+}

@@ -1,4 +1,1 @@
-torch
-transformers
-peft
-accelerate
+gradio>=5.0.0

@@ -10,76 +10,43 @@ tags:
 - argumentation
 - synthesis
 - integrative-reasoning
+- chain-of-thought
 size_categories:
 - n<1K
 ---
 
 # Dialectic Reasoning Traces
 
-255 scored dialectic reasoning traces for training models on integrative resolution under conflicting frames. Instead of list-format pros/cons or generic hedging, these traces teach models to identify real tension, make conditional commitments, and reach specific resolutions.
+Scored dialectic reasoning traces and calibration benchmarks for training models on integrative resolution under conflicting frames. Instead of list-format pros/cons or generic hedging, these traces teach models to identify real tension, surface hidden assumptions in `<think>` deliberation, make conditional commitments grounded in causal mechanisms, and reach specific resolutions.
 
-## Version Note
+## What's in This Repository
 
-This dataset contains only v1 traces, generated before the scoring changes described here. An earlier version on this repo included augmented data from later pipeline iterations (v2-v8) that suffered from a [GIGO feedback loop](https://github.com/CIRWEL/dialectic-dataset/blob/main/docs/post_mortem.md) where the scorer rewarded fabrication and best-of-N amplified it. That data has been removed. The post-mortem also describes which models were affected.
+### 1. Core `v1` Release (`traces.jsonl` + `training/`)
+255 scored dialectic reasoning traces (205 train / 25 val / 25 test) across 8 prompt families (51 prompts):
+- Generated via Claude Sonnet and filtered by rule-based structural and quality checks (`score >= 0.72`).
+- Checked for fabricated citations and statistics (`0` observed across the 255 traces).
+- Training-set sizes for public adapters:
+  - [`hikewa/dialectic-qwen2.5-1.5b-lora`](https://huggingface.co/hikewa/dialectic-qwen2.5-1.5b-lora): trained on this 205-example release.
+  - [`hikewa/dialectic-qwen3-8b-lora`](https://huggingface.co/hikewa/dialectic-qwen3-8b-lora): trained on a 408-example split of a larger 510-trace corpus (per the [training manifest](https://huggingface.co/datasets/hikewa/dialectic-reasoning-traces/blob/ab5811e95678e0b0a1f601b76111e60dfadf25e5/training_combined/manifest.json) in repo history).
 
-Training-set sizes: the [1.5B adapter](https://huggingface.co/hikewa/dialectic-qwen2.5-1.5b-lora) was trained on this release (205 training examples). The [8B adapter](https://huggingface.co/hikewa/dialectic-qwen3-8b-lora) was trained on a 408-example split of a larger 510-trace corpus, per the [training manifest](https://huggingface.co/datasets/hikewa/dialectic-reasoning-traces/blob/ab5811e95678e0b0a1f601b76111e60dfadf25e5/training_combined/manifest.json) in the Hugging Face dataset repo's history; that split is not in the current release.
+### 2. Next-Generation Self-Verifying `<think>` Pipeline & Calibration (`goldset/` + `v9_pilot/`)
+Following the [`v1`–`v8` post-mortem](https://github.com/CIRWEL/dialectic-dataset/blob/main/docs/post_mortem.md) — which showed that optimizing surface specificity metrics on final outputs created a Goodhart feedback loop that rewarded fabricated citations and arbitrary numbers — the [`v9` self-verifying pipeline](https://github.com/CIRWEL/dialectic-dataset/blob/main/docs/next_generation_design.md) enforces six stages:
+1. **Stage 1 (`<think>` Preservation)**: Preserves unscripted first-person `<think>...</think>` deliberation traces alongside the visible resolution.
+2. **Stage 2 (Empirical Claim Verification)**: Cross-family verifiers audit empirical citations, statistics, and numeric thresholds; any single fabricated claim vetoes the trace.
+3. **Stage 3 (Adversarial Challenge)**: Independent model families attack the weakest point, unexamined assumptions, and strongest counterargument; the trace is kept only if the core conclusion survives (`survives_challenge=True`).
+4. **Stage 4 (Deliberative `<think>` Scoring)**: Scores direction changes (`Wait—`, `Let me reconsider`), surfaced assumptions, self-correction, causal mechanisms, and think-to-output divergence while penalizing rubric echoing.
+5. **Stage 5 (Verified Training Builder)**: Selects best-of-N weighting thinking quality (`0.6`) + mechanistic falsifiability (`0.4`) with hard verification gates (`require_verified=True`, `max_fabrication=0`).
+6. **Stage 6 (Cross-Family Council Evaluation)**: Evaluates trained adapters via multi-family council (`unitares_council`).
 
-## What This Is
+Included files:
+- `goldset/goldset_thinking_v1.json`: 12 hand-crafted calibration examples (`genuine`, `surface_pattern`, `formulaic`) for calibrating `<think>` deliberative scorers and LLM judges.
+- `v9_pilot/council_pilot_v9.jsonl`: 5-trace cross-family council verification audit demonstrating zero empirical fabrication and strict Stage 3 adversarial filtering.
 
-Each trace contains a **thesis**, **antithesis**, and **synthesis** for a question that admits genuinely competing perspectives. The synthesis integrates both sides rather than picking one or hedging.
+## Interactive Explorer
 
-All traces were:
-- Generated via Claude Sonnet
-- Scored by a rule-based quality pipeline (tension quality, resolution quality, cross-phase coherence, synthesis sufficiency)
-- Filtered to quality score >= 0.72 with structural checks passed
-- Checked for fabricated citations and statistics; none were observed across the 255 traces (this is not a guarantee of factual accuracy)
+Try the side-by-side 8B benchmark, `<think>` council audit viewer, and live scorer sandbox in the browser:
+- **[Dialectic Reasoning Explorer (Hugging Face Space)](https://huggingface.co/spaces/hikewa/dialectic-reasoning)**
 
-## Dataset Structure
+## Pipeline & Source Code
 
-| Split | Examples |
-|-------|----------|
-| Train | 205 |
-| Val | 25 |
-| Test | 25 |
-
-Training examples are formatted as either:
-- **Explicit** (40%): thesis + antithesis + synthesis shown as separate paragraphs
-- **Implicit** (60%): synthesis-led integrated response
-
-## Categories (8 families, 51 prompts)
-
-| Category | Count |
-|----------|-------|
-| ethical_tradeoff | 35 |
-| design_tradeoff | 35 |
-| short_practical_judgment | 35 |
-| safety_vs_capability | 30 |
-| conflicting_evidence | 30 |
-| policy_ambiguity | 30 |
-| strategy_under_constraints | 30 |
-| reflective_synthesis | 30 |
-
-## Quality Scores
-
-- Mean: 0.769
-- Range: [0.721, 0.837]
-- Acceptance rate: 94.1%
-
-## Limitations
-
-These traces produce structured dialectic output but not genuine dialectic reasoning. The models trained on this data present "Perspective A, Perspective B, it depends" rather than synthesizing insights that neither perspective alone reveals. See the [post-mortem](https://github.com/CIRWEL/dialectic-dataset/blob/main/docs/post_mortem.md) for analysis and the [next-generation design](https://github.com/CIRWEL/dialectic-dataset/blob/main/docs/next_generation_design.md) for planned improvements.
-
-## Intended Use
-
-Fine-tuning small language models to produce better tradeoff reasoning — conditional answers, integrative resolution, resistance to shallow both-sides framing.
-
-## Models Trained on This Data
-
-- [hikewa/dialectic-qwen2.5-1.5b-lora](https://huggingface.co/hikewa/dialectic-qwen2.5-1.5b-lora): 1.5B adapter, trained on this release
-- [hikewa/dialectic-qwen3-8b-lora](https://huggingface.co/hikewa/dialectic-qwen3-8b-lora): 8B adapter, trained on the 408-example split described above
-
-Try them: [HuggingFace Space](https://huggingface.co/spaces/hikewa/dialectic-reasoning)
-
-## Pipeline
-
-Built with [dialectic-dataset](https://github.com/CIRWEL/dialectic-dataset).
+Built with [cirwel/dialectic-dataset](https://github.com/CIRWEL/dialectic-dataset).

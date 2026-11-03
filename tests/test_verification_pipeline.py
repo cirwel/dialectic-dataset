@@ -4,6 +4,8 @@ import json
 import sys
 from pathlib import Path
 
+import pytest
+
 from dialectic_dataset.verification_pipeline import (
     AdversarialChallengeResult,
     UnitaresConsultBackend,
@@ -25,6 +27,7 @@ from build_training import (  # noqa: E402
     passes_verification_gates,
     trace_to_training,
 )
+from upload import verify_training_manifest_gate  # noqa: E402
 from verify_traces import enrich_trace_record  # noqa: E402
 
 
@@ -345,4 +348,19 @@ class TestStage5BuildTrainingIntegration:
         assert enriched["fabricated_citations_regex"] >= 1
         assert enriched["any_fabrication_detected"] is True
         assert enriched["quality_gate"] == "reject"
+
+    def test_upload_manifest_gate_rejects_unverified_or_fabricated(self, tmp_path):
+        unverified = tmp_path / "unverified.json"
+        unverified.write_text(json.dumps({"require_verified": False, "max_fabrication": 0}))
+        with pytest.raises(ValueError, match="require_verified=False"):
+            verify_training_manifest_gate(unverified)
+
+        fabricated = tmp_path / "fabricated.json"
+        fabricated.write_text(json.dumps({"require_verified": True, "max_fabrication": 2}))
+        with pytest.raises(ValueError, match="max_fabrication=2"):
+            verify_training_manifest_gate(fabricated)
+
+        valid = tmp_path / "valid.json"
+        valid.write_text(json.dumps({"require_verified": True, "max_fabrication": 0}))
+        assert verify_training_manifest_gate(valid)["require_verified"] is True
 

@@ -89,10 +89,12 @@ def build_verification_prompt(question: str, response: str) -> str:
         f"TOPIC QUESTION:\n{question.strip()}\n\n"
         f"ESSAY:\n{sanitized}\n\n"
         "Answer the following four checks:\n"
-        "1. List every specific factual or empirical claim (studies, statistics, historical events, "
-        "named systems, numeric thresholds). State whether each is "
-        "\"confident_real\" (verifiably real / sound mechanism) or \"generated_or_uncertain\" "
-        "(invented citation, arbitrary numeric threshold, or unverified claim).\n"
+        "1. List every specific empirical citation, statistic, historical event, named study, "
+        "or quantitative threshold in the essay. State whether each is "
+        "\"confident_real\" (verifiably real) or \"generated_or_uncertain\" "
+        "(fabricated study/report, invented statistic, or arbitrary made-up numeric cutoff). "
+        "Do NOT list philosophical stances, architectural arguments, or conceptual mechanisms as fabricated empirical claims; "
+        "evaluate conceptual arguments in checks 2–4.\n"
         "2. Does the conclusion actually resolve the tension, or does it just "
         "present both sides and hedge (\"it depends\", \"balance both\")?\n"
         "3. Is there a specific moment in the draft where the argument "
@@ -101,8 +103,8 @@ def build_verification_prompt(question: str, response: str) -> str:
         "could the same template apply to any topic with the nouns swapped?\n\n"
         "Include these exact lines at the end of your review (or equivalent JSON keys `claims`, "
         "`resolves_tension`, `has_non_obvious_pivot`, `is_topic_specific`, `summary`):\n"
-        "FABRICATED_OR_UNCERTAIN_CLAIMS: <none, or semicolon-separated list of invented/unverified claims>\n"
-        "CONFIDENT_REAL_CLAIMS: <none, or semicolon-separated list of verified claims>\n"
+        "FABRICATED_OR_UNCERTAIN_CLAIMS: <none, or semicolon-separated list of fabricated citations/statistics/arbitrary numeric thresholds>\n"
+        "CONFIDENT_REAL_CLAIMS: <none, or semicolon-separated list of verified empirical claims>\n"
         "RESOLVES_TENSION: <true|false>\n"
         "HAS_NON_OBVIOUS_PIVOT: <true|false>\n"
         "IS_TOPIC_SPECIFIC: <true|false>\n"
@@ -145,6 +147,51 @@ def build_adversarial_prompt(question: str, response: str) -> str:
         "4. Whether the core conclusion survives this challenge (`survives_challenge`: true/false).\n\n"
         "Include these exact lines at the end of your critique (or equivalent JSON keys `weakest_point`, "
         "`strongest_counterargument`, `unexamined_assumption`, `survives_challenge`, `survival_rationale`):\n"
+        "WEAKEST_POINT: <text>\n"
+        "STRONGEST_COUNTERARGUMENT: <text>\n"
+        "UNEXAMINED_ASSUMPTION: <text>\n"
+        "SURVIVES_CHALLENGE: <true|false>\n"
+        "SURVIVAL_RATIONALE: <text>"
+    )
+
+
+def build_combined_evaluation_prompt(question: str, response: str) -> str:
+    """Build a combined Stage 2 + Stage 3 verification and adversarial challenge prompt.
+
+    Combining both stages into a single consult request cuts cross-family host
+    round-trips in half (1 call per trace instead of 2).
+    """
+    sanitized = _sanitize_think_tags_for_verifier(response)
+    return (
+        "Review the following draft essay by answering four verification checks "
+        "and four adversarial challenge checks. Do NOT grade formatting or section structure.\n\n"
+        f"TOPIC QUESTION:\n{question.strip()}\n\n"
+        f"ESSAY:\n{sanitized}\n\n"
+        "PART A — Verification Checks:\n"
+        "1. List every specific empirical citation, statistic, historical event, named study, "
+        "or quantitative threshold in the essay. State whether each is "
+        "\"confident_real\" (verifiably real) or \"generated_or_uncertain\" "
+        "(fabricated study/report, invented statistic, or arbitrary made-up numeric cutoff). "
+        "Do NOT list philosophical stances, architectural arguments, or conceptual mechanisms as fabricated empirical claims; "
+        "evaluate conceptual arguments in checks 2–8.\n"
+        "2. Does the conclusion actually resolve the tension, or does it just "
+        "present both sides and hedge (\"it depends\", \"balance both\")?\n"
+        "3. Is there a specific moment in the draft where the argument "
+        "changes direction or discovers something non-obvious?\n"
+        "4. Would a domain expert find the analysis specific to this topic, or "
+        "could the same template apply to any topic with the nouns swapped?\n\n"
+        "PART B — Adversarial Challenge:\n"
+        "5. Identify the weakest point in the argument (where a claim is asserted without mechanism).\n"
+        "6. Identify the strongest counterargument that the essay failed to address.\n"
+        "7. Identify any assumption the essay makes without examining.\n"
+        "8. Determine whether the core conclusion survives this challenge.\n\n"
+        "Include these exact lines at the end of your review:\n"
+        "FABRICATED_OR_UNCERTAIN_CLAIMS: <none, or semicolon-separated list of fabricated citations/statistics/arbitrary numeric thresholds>\n"
+        "CONFIDENT_REAL_CLAIMS: <none, or semicolon-separated list of verified empirical claims>\n"
+        "RESOLVES_TENSION: <true|false>\n"
+        "HAS_NON_OBVIOUS_PIVOT: <true|false>\n"
+        "IS_TOPIC_SPECIFIC: <true|false>\n"
+        "SUMMARY: <one-sentence explanation of verification verdict>\n"
         "WEAKEST_POINT: <text>\n"
         "STRONGEST_COUNTERARGUMENT: <text>\n"
         "UNEXAMINED_ASSUMPTION: <text>\n"
@@ -514,7 +561,19 @@ class UnitaresConsultBackend:
             "name": "consult",
             "arguments": arguments,
         }
-        return self._transport(f"{self.base_url}/v1/tools/call", payload, self.timeout)
+        last_err: Optional[Exception] = None
+        for attempt in range(3):
+            try:
+                res = self._transport(f"{self.base_url}/v1/tools/call", payload, self.timeout)
+                # Verify it wasn't a transient adapter failure before returning
+                self._extract_consult_responses(res)
+                return res
+            except Exception as exc:
+                last_err = exc
+                if attempt < 2 and "identity_required" not in str(exc):
+                    continue
+                raise
+        raise last_err or RuntimeError("UNITARES consult failed")
 
     @staticmethod
     def _extract_consult_responses(api_result: Dict[str, Any]) -> List[Tuple[str, str]]:
@@ -621,7 +680,35 @@ class UnitaresConsultBackend:
         ]
 
     def evaluate_trace(self, question: str, response: str) -> CouncilVerificationReport:
-        """Run both Stage 2 verification and Stage 3 adversarial challenge and aggregate."""
-        verifications = self.run_verification(question, response)
-        challenges = self.run_adversarial_challenge(question, response)
+        """Run both Stage 2 verification and Stage 3 adversarial challenge and aggregate.
+
+        Uses a single combined consult call when the custom transport does not differentiate
+        Stage 2 vs Stage 3 prompts, or falls back to separate calls if the response only
+        contains Stage 2 keys.
+        """
+        prompt = build_combined_evaluation_prompt(question, response)
+        raw = self._call_consult(
+            question=(
+                "Verify factual claims, tension resolution, reasoning pivot, and specificity, "
+                "then challenge the argument adversarially and determine if the core conclusion survives."
+            ),
+            context=prompt,
+        )
+        pairs = self._extract_consult_responses(raw)
+        verifications = [
+            parse_verification_response(text, reviewer_id=rev)
+            for rev, text in pairs
+        ]
+        # Check if the response also included Stage 3 adversarial fields
+        has_adv_fields = any(
+            "SURVIVES_CHALLENGE" in text.upper() or "survives_challenge" in text
+            for _, text in pairs
+        )
+        if has_adv_fields:
+            challenges = [
+                parse_adversarial_response(text, reviewer_id=rev)
+                for rev, text in pairs
+            ]
+        else:
+            challenges = self.run_adversarial_challenge(question, response)
         return aggregate_council_verdicts(verifications, challenges)

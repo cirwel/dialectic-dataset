@@ -226,14 +226,19 @@ def main():
     random.shuffle(examples)
 
     n = len(examples)
-    n_val = max(1, int(n * 0.075))
-    n_test = max(1, int(n * 0.075))
-    n_train = n - n_val - n_test
+    if n == 1:
+        n_train, n_val, n_test = 1, 0, 0
+    elif n == 2:
+        n_train, n_val, n_test = 1, 1, 0
+    else:
+        n_val = max(1, int(n * 0.075))
+        n_test = max(1, int(n * 0.075))
+        n_train = n - n_val - n_test
 
     splits = {
         "train": examples[:n_train],
         "val": examples[n_train:n_train + n_val],
-        "test": examples[n_train + n_val:],
+        "test": examples[n_train + n_val:n_train + n_val + n_test],
     }
 
     for name, data in splits.items():

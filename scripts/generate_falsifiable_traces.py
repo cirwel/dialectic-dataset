@@ -104,18 +104,19 @@ FALSIFIABLE_PROMPT = """You are reasoning through a genuine tension.
 
 Think through the problem first in natural, unscripted first-person prose (no numbered outlines, no bold rubric headers, and no commentary about "the prompt" or "constraints"). In your internal thinking, test your initial intuition against concrete failure modes, question any hidden assumption in the framing, and work out the underlying causal mechanism.
 
-Carry the core insight from your thinking directly into your visible conclusion. Your visible response MUST contain:
-1. A specific causal mechanism and structural boundary condition (never invent arbitrary percentages or made-up millisecond/day thresholds when the boundary is architectural or structural)
-2. At least one conditional ("if/when ..., then ...") that names the SPECIFIC operational variable (e.g., whether actions mutate external state under concurrency, whether rollback is automated, whether errors compound across steps) — never "when context allows" or "in some cases"
-3. At least one checkable prediction that follows directly from your causal mechanism
-4. A clear position — not "both sides have merit" but "do X when Y, do Z when W"
+Carry the core insight from your thinking directly into your visible conclusion. Your visible response MUST:
+1. Ground the resolution in a concrete causal mechanism and exact scope boundary (e.g., distinguish irreversible external side effects from reversible local state, or per-conversation context from durable cross-session state — never overstate a conditional mechanism as a universal absolute).
+2. State at least one conditional ("If/When ..., then ...") naming the specific operational variable and why it governs the outcome, without using boilerplate scaffolding phrases like "The core causal mechanism is", "When the operational variable is", or "A checkable prediction is".
+3. State what observable failure or behavior will occur when that boundary condition is violated, and preempt the strongest counterargument (e.g., why a layered architecture or simpler alternative does or does not suffice).
+4. Commit to a clear decision rule ("do X when Y, do Z when W") rather than hedging or flattening one side of the tension.
 
 Your response MUST NOT contain:
 - "It depends" without specifying on WHAT with a concrete variable
 - "Both sides have merit", "balanced approach", "context matters", "it ultimately depends"
 - Labeled thesis/antithesis/synthesis, numbered lists, or pros/cons tables
+- Boilerplate meta-labels ("The core causal mechanism is...", "The structural boundary condition is...", "A checkable prediction is...", "The clear position is...")
 - Fabricated studies, surveys, or reports (e.g. "a 2022 Harvard study found...")
-- Arbitrary invented numbers or thresholds (e.g. "500ms latency budget" or "15% over 7 days") that have no real causal basis
+- Arbitrary invented numbers or thresholds (e.g. "500ms latency budget", "two standard deviations", or "15% over 7 days") that have no real causal basis
 
 Question: {question}
 
@@ -146,9 +147,10 @@ DELIBERATIVE_SYSTEM_PROMPT = (
     "first-person prose (no numbered lists, no bold headings). In <think>, state your "
     "initial instinct, then pause (\"Wait—\", \"Let me reconsider\") to uncover the hidden "
     "assumption in the framing, remind yourself to avoid hedging or inventing arbitrary "
-    "numbers/statistics, and trace the concrete causal mechanism. After </think>, carry "
-    "that exact causal mechanism into a direct, committed resolution in prose (150-350 words) "
-    "with specific operational conditionals and checkable predictions."
+    "numbers/statistics, and trace the concrete causal mechanism and strongest counterargument. "
+    "After </think>, write a direct, natural, domain-specific resolution in prose (150-350 words) "
+    "with specific operational conditionals and testable consequences, without using formulaic "
+    "meta-labels like 'The core causal mechanism is' or 'A checkable prediction is'."
 )
 
 DELIBERATIVE_EXEMPLAR_USER = "Should startups optimize for speed of iteration or code quality?"
@@ -157,24 +159,28 @@ DELIBERATIVE_EXEMPLAR_ASSISTANT = (
     "At first glance, startups should optimize for speed because shipping faster means "
     "learning faster, whereas code quality seems like a luxury for mature companies. "
     "Wait—that assumes that technical debt accrues uniformly across the codebase. Let me "
-    "reconsider what actually kills iteration speed in a six-month-old startup. Instead of "
+    "reconsider what actually kills iteration speed in an early-stage codebase. Instead of "
     "hedging or inventing a fake industry statistic, let me trace the mechanism: if the "
-    "data model or auth boundary is a mess, every new feature requires untangling broken "
-    "state, so deployment velocity drops to zero. Actually, the real tension is not speed "
-    "versus quality across the whole stack; it is boundary stability versus interior "
-    "disposable code. Because API contracts and database schemas have high blast radius "
-    "when changed, cutting corners there causes cascading rework, whereas UI and workflow "
-    "experiments are cheap to rewrite once product-market fit is validated.\n"
+    "data model or permission boundary is a mess, every new feature requires untangling broken "
+    "state, so deployment velocity drops. Actually, the real tension is not speed "
+    "versus quality across the whole stack; it is irreversible boundary contracts versus "
+    "disposable interior workflows. Because API contracts, database schemas, and billing "
+    "ledgers persist state that cannot be trivially migrated without risking data loss, "
+    "cutting corners there causes compounding rework, whereas UI layouts and onboarding flows "
+    "can be rewritten in an afternoon once product-market fit is validated.\n"
     "</think>\n\n"
-    "Optimize for architectural quality at irreversible boundaries—data models, "
-    "authentication, and core API contracts—while optimizing for raw iteration speed in "
-    "interior product workflows and UI. If a startup has fewer than 10 engineers and has "
-    "not yet reached product-market fit, spending weeks polishing interior UI components "
-    "wastes runway because those features will likely be discarded within 3 months. "
-    "However, if the team cuts corners on database schema constraints or state boundaries, "
-    "feature velocity will collapse within 60 days as engineers spend more than half their "
-    "sprint untangling data corruption. Enforce strict review and automated tests on schema "
-    "and API boundaries from day one, and allow rapid, unpolished experimentation everywhere else."
+    "Optimize for strict correctness at state-persisting boundaries—database schemas, "
+    "permission models, and external API contracts—while optimizing for raw iteration speed in "
+    "stateless UI and product workflows. When a feature only transforms presentation or "
+    "ephemeral session flow, shipping unpolished code accelerates user feedback because "
+    "discarding or rewriting a stateless view carries zero migration cost. Conversely, if an "
+    "engineering team cuts corners on schema invariants or idempotency keys where writes "
+    "mutate durable records, partial failures will corrupt stored state and force engineers "
+    "to halt feature delivery to run manual data backfills. Even if a team tries to move fast "
+    "everywhere and clean up later, corrupted production records cannot be fixed by a simple "
+    "code deploy. Enforce strict review and automated invariant tests on every boundary that "
+    "writes durable state, and allow rapid, experimental iteration everywhere upstream of "
+    "that boundary."
 )
 
 

@@ -23,3 +23,4 @@ outputs/
 *.jsonl
 !data/goldset/*.jsonl
 !data/training/*.jsonl
+!space/*.jsonl
